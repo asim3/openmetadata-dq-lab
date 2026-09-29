@@ -52,8 +52,9 @@ openmetadata-dq-lab/
 │   ├── oracle_generators.py       # clean + bad records + legacy quirks
 │   └── requirements.txt
 ├── pipelines/                     # YAML mirroring the UI-configured pipelines
-│   ├── mysql/{metadata,profiler,dq_tests}.yaml
-│   └── oracle/{metadata,profiler,dq_tests}.yaml
+│   ├── mysql/                     # {metadata,auto_classification,profiler}.yaml,
+│   │                              # dq_tests_{customers,products,orders}.yaml
+│   └── oracle/                    # same pipelines, one dq_tests_<table>.yaml per tested table
 ├── .env.example
 ├── README.md
 ├── PLAN.md
@@ -97,10 +98,11 @@ Configured in the UI, deployed to the bundled Airflow with no schedule:
 
 1. Database service connection
 2. Metadata ingestion
-3. Profiler
-4. Test suite containing every test listed for that source
+3. Auto classification with "Store Sample Data" on (in OpenMetadata 2.x this is the only pipeline that stores table sample data; it also suggests PII tags)
+4. Profiler
+5. A logical test suite containing every test listed for that source (the tests span several tables)
 
-`pipelines/<source>/` holds YAML equivalents as reference and fallback, runnable from the ingestion container with `metadata ingest|profile|test -c`. Env placeholders only; no secrets.
+`pipelines/<source>/` holds YAML equivalents as reference and fallback, runnable from the ingestion container with `metadata ingest|classify|profile|test -c`. Tests get one `dq_tests_<table>.yaml` per table: YAML can only create test cases in a single-table run, and a logical-suite run only executes tests that already exist. Test case names match the README, so tests created in the UI and from YAML don't duplicate. Env placeholders only; no secrets.
 
 ## 3. Phase 1 — MySQL e-commerce
 
@@ -115,6 +117,8 @@ Configured in the UI, deployed to the bundled Airflow with no schedule:
 Scaling: products get 200 rows on the first run, then about 20 per run. Orders are about 3× `--customers` and reference existing customers and products.
 
 Connection from OpenMetadata: `source-mysql:3306`.
+
+Row counts: OpenMetadata reads MySQL row counts from `information_schema.TABLES`, an InnoDB statistics estimate that MySQL 8 caches for up to 24 hours. The seeder runs `ANALYZE TABLE` after every run, and `source-mysql` starts with a high `innodb_stats_persistent_sample_pages`, so the profiler's row counts match `COUNT(*)` at lab scale.
 
 ### Defects and tests
 
@@ -135,12 +139,14 @@ Connection from OpenMetadata: `source-mysql:3306`.
 
 ### Learning path
 
-1. Add the MySQL service and test the connection.
-2. Run metadata ingestion; explore tables, columns, and sample data.
-3. Enrich the catalog: descriptions, owners, tags, and a glossary term or two.
-4. Seed a clean baseline, run the profiler, and read the row counts and column stats.
-5. Create the test suite and run it: everything green.
-6. Seed a bad batch, re-run the profiler and tests, and triage the red flags and the incidents they raise.
+1. Seed a clean baseline: `seed.py --init --bad-rate 0 --days 7` (the tables must exist before ingestion).
+2. Add the MySQL service and test the connection.
+3. Run metadata ingestion; explore tables and columns.
+4. Run auto classification; explore the sample data and the suggested PII tags.
+5. Enrich the catalog: descriptions, owners, tags, and a glossary term or two.
+6. Run the profiler and read the row counts and column stats.
+7. Create the test suite and run it: everything green.
+8. Seed a bad batch, re-run the profiler and tests, and triage the red flags and the incidents they raise.
 
 ### Acceptance
 
@@ -198,10 +204,10 @@ Connection from OpenMetadata: `source-oracle:1521`, service name `XEPDB1`, views
 
 ### Learning path
 
-7. Start Oracle, seed it, and add the service with views included.
-8. Explore view lineage from the views back to their base tables.
-9. Profile a view against its base tables and explain why `V_MONTHLY_PAYROLL` disagrees.
-10. Hunt the legacy quirks: text dates, bad status codes, drifted department names.
+9. Start Oracle, seed it, and add the service with views included.
+10. Explore view lineage from the views back to their base tables.
+11. Profile a view against its base tables and explain why `V_MONTHLY_PAYROLL` disagrees.
+12. Hunt the legacy quirks: text dates, bad status codes, drifted department names.
 
 ### Acceptance
 
