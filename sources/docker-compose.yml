@@ -1,0 +1,35 @@
+# Lab source databases, included by the root compose.yml.
+#
+# Services join OpenMetadata's network by referencing app_net, which the
+# official openmetadata/docker-compose.yml defines. Don't declare app_net
+# here: older Compose versions reject a network declared by two included
+# files.
+
+services:
+  source-mysql:
+    image: mysql:8.4
+    restart: unless-stopped
+    # OpenMetadata reads MySQL row counts from information_schema, i.e. from
+    # InnoDB statistics. With enough sample pages, the ANALYZE TABLE the seeder
+    # runs after every batch makes those counts exact at lab scale.
+    command: --innodb-stats-persistent-sample-pages=100000
+    environment:
+      MYSQL_ROOT_PASSWORD: ${SOURCE_MYSQL_ROOT_PASSWORD:?copy .env.example to .env}
+      MYSQL_DATABASE: dqlab
+      MYSQL_USER: ${SOURCE_MYSQL_USER:?copy .env.example to .env}
+      MYSQL_PASSWORD: ${SOURCE_MYSQL_PASSWORD:?copy .env.example to .env}
+    ports:
+      - "${SOURCE_MYSQL_PORT:-3307}:3306"
+    volumes:
+      - source-mysql-data:/var/lib/mysql
+    networks:
+      - app_net
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -uroot -p"$$MYSQL_ROOT_PASSWORD" --silent
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+volumes:
+  source-mysql-data:

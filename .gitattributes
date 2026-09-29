@@ -1,0 +1,3 @@
+# LF everywhere, so openmetadata/docker-compose.yml stays byte-identical to the
+# upstream release asset even on Windows checkouts (core.autocrlf=true).
+* text=auto eol=lf

@@ -1,0 +1,12 @@
+# openmetadata-dq-lab: OpenMetadata plus the lab's source databases.
+#
+#   docker compose up -d        # OpenMetadata + source-mysql
+#
+# openmetadata/docker-compose.yml is the official release file, pinned and
+# unmodified (version and checksum in README.md). Everything the lab adds
+# lives in sources/docker-compose.yml.
+name: dqlab
+
+include:
+  - openmetadata/docker-compose.yml
+  - sources/docker-compose.yml
