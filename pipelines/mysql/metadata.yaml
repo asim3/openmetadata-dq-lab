@@ -1,0 +1,28 @@
+# Metadata ingestion for the lab's MySQL source: mirrors the UI's Metadata
+# agent on service "dqlab_mysql". Run from the repo root (README: "Pipelines
+# from YAML"):
+#   docker exec --env-file .env openmetadata_ingestion metadata ingest -c /tmp/dqlab-pipelines/mysql/metadata.yaml
+# ${...} placeholders come from .env; the file itself holds no secrets.
+source:
+  type: mysql
+  serviceName: dqlab_mysql
+  serviceConnection:
+    config:
+      type: Mysql
+      hostPort: source-mysql:3306
+      username: ${SOURCE_MYSQL_USER}
+      authType:
+        password: ${SOURCE_MYSQL_PASSWORD}
+      databaseSchema: dqlab
+  sourceConfig:
+    config:
+      type: DatabaseMetadata
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  openMetadataServerConfig:
+    hostPort: http://openmetadata-server:8585/api
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${DQLAB_INGESTION_BOT_JWT}

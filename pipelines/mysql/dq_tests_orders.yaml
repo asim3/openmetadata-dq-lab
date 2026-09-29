@@ -1,0 +1,82 @@
+# Data quality tests for dqlab.orders. Creates any missing test cases (same
+# names as the README, so UI-created ones are reused, not duplicated) and runs
+# every test on the table.
+#   docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/mysql/dq_tests_orders.yaml
+source:
+  type: testsuite
+  serviceName: dqlab_mysql
+  sourceConfig:
+    config:
+      type: TestSuite
+      entityFullyQualifiedName: dqlab_mysql.default.dqlab.orders
+processor:
+  type: orm-test-runner
+  config:
+    forceUpdate: false
+    testCases:
+      - name: orders_no_orphans
+        description: Every order points at an existing customer and product (the source has no foreign keys).
+        testDefinitionName: tableCustomSQLQuery
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: sqlExpression
+            value: >-
+              SELECT o.order_id, o.customer_id, o.product_id
+              FROM dqlab.orders o
+              LEFT JOIN dqlab.customers c ON c.customer_id = o.customer_id
+              LEFT JOIN dqlab.products p ON p.product_id = o.product_id
+              WHERE c.customer_id IS NULL OR p.product_id IS NULL
+          - name: strategy
+            value: ROWS
+          - name: operator
+            value: "<="
+          - name: threshold
+            value: "0"
+      - name: orders_amount_min_1
+        description: Order amounts are positive. The bound is 1 because the UI takes whole numbers.
+        testDefinitionName: columnValuesToBeBetween
+        columnName: amount
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: minValue
+            value: "1"
+      - name: orders_quantity_min_1
+        description: Every order line has at least one item.
+        testDefinitionName: columnValuesToBeBetween
+        columnName: quantity
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: minValue
+            value: "1"
+      - name: orders_status_allowed
+        description: Status is one of pending, shipped, delivered, cancelled. matchEnum makes every row count, not just one.
+        testDefinitionName: columnValuesToBeInSet
+        columnName: status
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: allowedValues
+            value: "['pending', 'shipped', 'delivered', 'cancelled']"
+          - name: matchEnum
+            value: "true"
+      - name: orders_no_future_dates
+        description: No order is dated after the moment the test runs.
+        testDefinitionName: tableCustomSQLQuery
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: sqlExpression
+            value: SELECT order_id, order_date FROM dqlab.orders WHERE order_date > NOW()
+          - name: strategy
+            value: ROWS
+          - name: operator
+            value: "<="
+          - name: threshold
+            value: "0"
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  openMetadataServerConfig:
+    hostPort: http://openmetadata-server:8585/api
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${DQLAB_INGESTION_BOT_JWT}

@@ -98,7 +98,7 @@ Configured in the UI, deployed to the bundled Airflow with no schedule:
 
 1. Database service connection
 2. Metadata ingestion
-3. Auto classification with "Store Sample Data" on (in OpenMetadata 2.x this is the only pipeline that stores table sample data; it also suggests PII tags)
+3. Auto classification with "Store Sample Data" on and "Enable Auto Classification" (PII tagging) off. In OpenMetadata 2.x this is the only pipeline that stores table sample data; PII tagging downloads a spaCy model from GitHub on first use, which TLS-inspecting networks block.
 4. Profiler
 5. A logical test suite containing every test listed for that source (the tests span several tables)
 
@@ -142,7 +142,7 @@ Row counts: OpenMetadata reads MySQL row counts from `information_schema.TABLES`
 1. Seed a clean baseline: `seed.py --init --bad-rate 0 --days 7` (the tables must exist before ingestion).
 2. Add the MySQL service and test the connection.
 3. Run metadata ingestion; explore tables and columns.
-4. Run auto classification; explore the sample data and the suggested PII tags.
+4. Run auto classification (sample data only); explore the sample data.
 5. Enrich the catalog: descriptions, owners, tags, and a glossary term or two.
 6. Run the profiler and read the row counts and column stats.
 7. Create the test suite and run it: everything green.
