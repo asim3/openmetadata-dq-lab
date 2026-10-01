@@ -220,3 +220,4 @@ __marimo__/
 # OpenMetadata's internal MySQL data: the official compose file bind-mounts
 # ./docker-volume/db-data relative to itself.
 openmetadata/docker-volume/
+Screenshots/
