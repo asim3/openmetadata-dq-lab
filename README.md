@@ -89,24 +89,37 @@ The seeder prints what it injected, and which test should catch each defect, so 
 
 ### 2. Add the MySQL service and test the connection
 
-Settings > Services > Databases > Add New Service > MySQL.
+Settings > Services > Databases > Add New Service > MySQL. This opens a three-step wizard: Select Service Type, Connect, What to Ingest.
 
-| Field | Value |
+| Field (Connect step) | Value |
 |---|---|
 | Service name | `dqlab_mysql`. The YAML files and test names assume this name. |
-| Username / Password | `SOURCE_MYSQL_USER` / `SOURCE_MYSQL_PASSWORD` from `.env` |
+| Username / Password | `SOURCE_MYSQL_USER` / `SOURCE_MYSQL_PASSWORD` from `.env`. The password is under Authentication > Basic Auth. |
 | Host and Port | `source-mysql:3306`. OpenMetadata runs inside Docker, so not `localhost:3307`. |
-| Database Schema | `dqlab` |
+| Database Schema | `dqlab` (under Scope & Options). Leave Database Name and Query History Table empty. |
 
-Click Test Connection. Every step should pass except GetQueries, which warns that the user can't read `mysql.general_log`. That's expected: query history feeds usage and lineage, which this lab doesn't use.
+Click Test Connection. Every step should pass except GetQueries, which warns that the user can't read `mysql.general_log`. That's expected: query history feeds usage and lineage, which this lab doesn't use. A yellow "Test connection partially successful" banner appears, and you can still continue.
+
+There is no Save button. Click Next: What to Ingest, keep the defaults (scan everything, system schemas excluded) and click **Create & Deploy**.
 
 ### 3. Run metadata ingestion
 
-On the service page: Agents > Add Agent > Metadata. Keep the defaults, set the schedule to On Demand (no schedule), deploy it and click Run. Then explore `dqlab_mysql > default > dqlab`: three tables, their columns and types.
+Create & Deploy starts **AutoPilot**, which creates agents for the new service and runs them straight away, without you adding any. Expect these on the service's Agents tab, all on a weekly schedule:
+
+| Agent | What to do |
+|---|---|
+| Metadata | Keep it. Edit it (`⋮` > Edit) and set the schedule to On Demand. It has already run once. |
+| Lineage | Delete it. It fails (same `mysql.general_log` denial) and the lab doesn't use lineage. |
+| Usage | Delete it. It finds 0 queries. |
+| Profiler, AutoClassification | They appear a little later. Items 4 and 6 configure them. Don't run them yet. |
+
+Don't click Trigger AutoPilot again: it recreates the agents you deleted. The blue "Agents deploying" banner can stay stuck on a count like "2 queued" after you edit the agents; ignore it.
+
+Then explore `dqlab_mysql > default > dqlab`: three tables, their columns and types. Click Run on the Metadata agent any time you want to re-ingest.
 
 ### 4. Run auto classification for sample data
 
-Agents > Add Agent > Auto Classification. Turn on Store Sample Data and turn off Enable Auto Classification. Use an On Demand schedule, deploy and run it. Each table gets a Sample Data tab with 50 rows. In OpenMetadata 2.x this is the only pipeline that stores table sample data.
+Edit the AutoClassification agent that AutoPilot created (`⋮` > Edit). Turn on Store Sample Data and turn off Enable Auto Classification, and set the schedule to On Demand. Save, then click Run. Each table gets a Sample Data tab with 50 rows (the Row Limit dropdown above it is only a display limit). In OpenMetadata 2.x this is the only pipeline that stores table sample data.
 
 Enable Auto Classification (PII tagging) stays off in this lab. It downloads a spaCy language model from GitHub the first time it runs, and networks that inspect TLS block that download. On an open network, you can turn it on to get suggested PII tags on columns such as `email` and `full_name`.
 
@@ -116,7 +129,12 @@ Add descriptions to tables and columns, set an owner, apply a tag or two, and cr
 
 ### 6. Run the profiler
 
-Agents > Add Agent > Profiler, On Demand, deploy, Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column. Column Profile shows nulls, distinct values and min/max per column.
+Edit the Profiler agent that AutoPilot created (`⋮` > Edit) and make two changes:
+
+- **Remove the classification filter.** AutoPilot's profiler only profiles tables tagged `Tier1` or `Tier2` (Filter Patterns > classification filter). None of the lab's tables are, so the run succeeds but profiles nothing ("Processed records: 0, Filtered: 3" in the logs). Delete both entries.
+- Set the schedule to On Demand.
+
+Save and click Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column. Column Profile shows nulls, distinct values and min/max per column.
 
 ### 7. Create the tests and run them: everything green
 
@@ -124,7 +142,7 @@ Create the 13 tests in [Tests and the defects they catch](#tests-and-the-defects
 
 Then go to Data Quality > Test Suites and create a Bundle Suite named `dqlab_mysql_suite`. A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Add all 13 test cases, add a pipeline with an On Demand schedule, and run it. All 13 tests pass.
 
-Shortcut: [run the three `dq_tests_*.yaml` files](#pipelines-from-yaml) to create the test cases, then build the Bundle Suite in the UI. The test names match, so nothing is duplicated.
+Shortcut: [run the three `dq_tests_*.yaml` files](#pipelines-from-yaml) to create the test cases (this needs the ingestion bot's token in `.env`), then build the Bundle Suite in the UI. The test names match, so nothing is duplicated.
 
 ### 8. Seed a bad batch and triage
 
@@ -255,6 +273,8 @@ rm -rf openmetadata/docker-volume    # PowerShell: Remove-Item -Recurse -Force o
 - **OpenMetadata not up yet**: the first start runs database migrations; give it a few minutes. `docker compose ps` should show `execute_migrate_all` exited (0) and `openmetadata_server` healthy.
 - **OpenMetadata can't reach MySQL**: use `source-mysql:3306`, not `localhost`. Inside Docker, `localhost` is the ingestion container itself. Check name resolution with `docker exec openmetadata_ingestion getent hosts source-mysql`.
 - **Auto classification fails with `CERTIFICATE_VERIFY_FAILED` for raw.githubusercontent.com**: this happens when Enable Auto Classification (PII tagging) is on. It downloads a spaCy language model (`en_core_web_md`) from GitHub the first time it runs, and networks that inspect TLS (corporate proxies) break that download. Turn it back off; sample data is still stored.
+- **Profiler run succeeds but there are no profiles ("Processed records: 0, Filtered: 3")**: AutoPilot's profiler has a classification filter limited to `Tier1`/`Tier2`. Remove it, as described in the learning path, item 6.
+- **Lineage agent shows Failed**: expected. It needs query history (`mysql.general_log`), which the lab's user can't read. Delete the Lineage and Usage agents.
 - **Git Bash on Windows turns `/tmp/...` into a Windows path**: prefix the `docker` commands with `MSYS_NO_PATHCONV=1`, or use PowerShell.
 - **`seed.py: cannot connect to source MySQL`**: start the stack and wait for `source-mysql` to be healthy. Also check `SOURCE_MYSQL_PORT` in `.env`.
 - **`table(s) ... not found`**: run the seeder once with `--init`.
