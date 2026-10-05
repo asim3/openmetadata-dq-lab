@@ -4,7 +4,7 @@ Build brief for Claude Code. Work through the milestones in section 6 in order: 
 
 ## 1. Overview
 
-A local, testing-only lab for learning OpenMetadata's catalog and data-quality features hands-on. Source databases receive fake data on demand, a configurable share of it deliberately bad. OpenMetadata profiles and tests the sources, and the bad rows surface as failed tests. The repo doubles as an onboarding resource for trainees.
+A local, testing-only lab for learning OpenMetadata's catalog and data-quality features hands-on. Source databases receive fake data on demand, a configurable share of it deliberately bad. OpenMetadata profiles and tests the sources, and the bad rows surface as failed tests. The repo doubles as an onboarding resource for new participants.
 
 | Phase | Source | Domain | Purpose |
 |---|---|---|---|
@@ -56,7 +56,9 @@ openmetadata-dq-lab/
 │   │                              # dq_tests_{customers,products,orders}.yaml
 │   └── oracle/                    # same pipelines, one dq_tests_<table>.yaml per tested table
 ├── .env.example
-├── README.md
+├── README.md                      # developer setup
+├── docs/                          # learning-path.md (participants), reference.md
+├── CLAUDE.md                      # guidance for Claude Code
 ├── PLAN.md
 └── LICENSE
 ```
@@ -216,9 +218,14 @@ Connection from OpenMetadata: `source-oracle:1521`, service name `XEPDB1`, views
 8. All Oracle tables and both views appear in OpenMetadata, with view-to-table lineage.
 9. Oracle test failures match the injected defects and quirks.
 
-## 5. README
+## 5. Documentation
 
-Cover: purpose, architecture sketch, prerequisites, Phase 1 quickstart, Phase 2 add-on, why the sources have no constraints, the class flow, the learning path, and troubleshooting (Oracle startup time, memory, networking).
+Split by audience:
+
+- `README.md` (developer setup): purpose, architecture sketch, prerequisites, quickstart, resetting, infrastructure troubleshooting (Oracle startup time, memory, networking), the pinned version, and the Phase 2 add-on.
+- `docs/learning-path.md` (students): the class flow, the step-by-step learning path, and UI troubleshooting.
+- `docs/reference.md`: the tests and the defects they catch, why the sources have no constraints, the seeder reference, and the YAML pipelines.
+- `CLAUDE.md`: repo rules and conventions for Claude Code.
 
 ## 6. Build order
 
