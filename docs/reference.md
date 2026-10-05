@@ -1,6 +1,6 @@
 # Reference
 
-Lookup material for the lab: the tests and the defects they catch, the seeder, and the YAML pipelines. For the walkthrough, see the [learning path](learning-path.md).
+Lookup material for the lab: the tests and the defects they catch, the seeder, the agents, and the optional test-case YAML. For the walkthrough, see the [learning path](learning-path.md).
 
 ## Tests and the defects they catch
 
@@ -151,7 +151,7 @@ Things that go wrong:
 
 - **Oracle without the schema filter** tries to catalog all of `SYS`, because the lab user can read the data dictionary. Every Oracle agent needs the filter.
 - **A test case created wrongly is reused**, not recreated, so it keeps failing until you delete it. On Oracle that usually means a column name that isn't lowercase.
-- **The ingestion bot's token changes** whenever OpenMetadata's data is wiped. YAML runs then fail with "The given token does not match the current bot's token" until you copy the new token into `.env`.
+- **The ingestion bot's token changes** whenever OpenMetadata's data is wiped. The test YAML then fails with "The given token does not match the current bot's token" until you copy the new token into `.env`.
 - **Two agents of one type** appear when you add your own and AutoPilot adds its copy later.
 
 ### AutoPilot
@@ -171,43 +171,35 @@ AutoPilot is an OpenMetadata application that creates and runs agents for a new 
   | Auto Classification | **PII tagging on**, **Store Sample Data off**, confidence 80 | PII needs a GitHub download that a TLS-inspecting network blocks; no sample data |
 
 - Edit the last two as in the [learning path](learning-path.md#3-run-metadata-ingestion), and delete Lineage and Usage.
-- **Creating a service through the API or from YAML does not start it.** Only the agents you create exist.
+- **Creating a service through the API does not start it.** Only the agents you create exist.
 - Don't click Trigger AutoPilot after you've deleted agents: it recreates them.
 
 Checked by running the whole learning path through the API, and by triggering AutoPilot by hand on a MySQL test service. Not checked yet: AutoPilot started from the UI wizard (timing), and what it adds for an Oracle service.
 
-## Pipelines from YAML
+## Test cases from YAML (optional)
 
-`pipelines/mysql/` and `pipelines/oracle/` mirror the UI pipelines, for reference or when the UI isn't an option. The files contain `${...}` placeholders only; values come from your `.env`. To run them you need the ingestion bot's token: in OpenMetadata go to Settings > Bots > ingestion-bot, copy the token, and set `DQLAB_INGESTION_BOT_JWT` in `.env`. The token changes if OpenMetadata's data is wiped, so copy it again then.
+Creating 25 test cases by hand takes a while, so `pipelines/mysql/` and `pipelines/oracle/` hold `dq_tests_*.yaml` files that create them for you. This is an optional shortcut: the lab doesn't use YAML for anything else. Add the service and run the Metadata agent in the UI first: the YAML only needs the tables to exist in OpenMetadata.
+
+The files contain `${...}` placeholders only; values come from your `.env`. To run them you need the ingestion bot's token: in OpenMetadata go to Settings > Bots > ingestion-bot, copy the token, and set `DQLAB_INGESTION_BOT_JWT` in `.env`. The token changes if OpenMetadata's data is wiped, so copy it again then.
 
 Copy the files into the ingestion container (repeat after any edit), then run them there:
 
 ```sh
 docker cp pipelines/. openmetadata_ingestion:/tmp/dqlab-pipelines
 
-docker exec --env-file .env openmetadata_ingestion metadata ingest   -c /tmp/dqlab-pipelines/mysql/metadata.yaml
-docker exec --env-file .env openmetadata_ingestion metadata classify -c /tmp/dqlab-pipelines/mysql/auto_classification.yaml
-docker exec --env-file .env openmetadata_ingestion metadata profile  -c /tmp/dqlab-pipelines/mysql/profiler.yaml
-docker exec --env-file .env openmetadata_ingestion metadata test     -c /tmp/dqlab-pipelines/mysql/dq_tests_customers.yaml
-docker exec --env-file .env openmetadata_ingestion metadata test     -c /tmp/dqlab-pipelines/mysql/dq_tests_products.yaml
-docker exec --env-file .env openmetadata_ingestion metadata test     -c /tmp/dqlab-pipelines/mysql/dq_tests_orders.yaml
+# MySQL: 13 test cases
+docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/mysql/dq_tests_customers.yaml
+docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/mysql/dq_tests_products.yaml
+docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/mysql/dq_tests_orders.yaml
+
+# Oracle: 12 test cases
+docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/oracle/dq_tests_employees.yaml
+docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/oracle/dq_tests_job_history.yaml
+docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/oracle/dq_tests_salaries.yaml
+docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/oracle/dq_tests_allowances.yaml
 ```
 
-- The metadata file creates the `dqlab_mysql` service if it doesn't exist yet.
-- Each test file creates its table's missing test cases, then runs every test on that table. YAML can only create test cases one table at a time. The Bundle Suite that groups all 13 tests is created in the UI.
-
-Oracle uses the same pattern, with `oracle` in place of `mysql` and the service `dqlab_oracle`. It has one extra file, `lineage.yaml`, which links each view to its tables:
-
-```sh
-docker exec --env-file .env openmetadata_ingestion metadata ingest   -c /tmp/dqlab-pipelines/oracle/metadata.yaml
-docker exec --env-file .env openmetadata_ingestion metadata ingest   -c /tmp/dqlab-pipelines/oracle/lineage.yaml
-docker exec --env-file .env openmetadata_ingestion metadata classify -c /tmp/dqlab-pipelines/oracle/auto_classification.yaml
-docker exec --env-file .env openmetadata_ingestion metadata profile  -c /tmp/dqlab-pipelines/oracle/profiler.yaml
-docker exec --env-file .env openmetadata_ingestion metadata test     -c /tmp/dqlab-pipelines/oracle/dq_tests_employees.yaml
-docker exec --env-file .env openmetadata_ingestion metadata test     -c /tmp/dqlab-pipelines/oracle/dq_tests_job_history.yaml
-docker exec --env-file .env openmetadata_ingestion metadata test     -c /tmp/dqlab-pipelines/oracle/dq_tests_salaries.yaml
-docker exec --env-file .env openmetadata_ingestion metadata test     -c /tmp/dqlab-pipelines/oracle/dq_tests_allowances.yaml
-```
-
-- Run `metadata.yaml` first, and `lineage.yaml` after it.
-- `DEPARTMENTS` has no tests. The four `dq_tests_*.yaml` files create the 12 test cases; the Bundle Suite `dqlab_oracle_suite` is created in the UI.
+- Each file creates its table's missing test cases, then runs every test on that table. YAML can only create test cases one table at a time, so there is one file per tested table. The Bundle Suite that groups them (`dqlab_mysql_suite`, `dqlab_oracle_suite`) is created in the UI.
+- The test names match the tables above, so test cases created in the UI and from YAML don't duplicate. A test case that already exists is reused, not changed: delete a wrongly created one before re-running.
+- `DEPARTMENTS` (Oracle) has no tests.
+- The Oracle files use the table names as OpenMetadata shows them (`dqlab_oracle.default.dqlab.EMPLOYEES`) and lowercase column names.

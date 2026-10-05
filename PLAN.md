@@ -51,10 +51,9 @@ openmetadata-dq-lab/
 │   ├── oracle_schema.py           # HR DDL + views
 │   ├── oracle_generators.py       # clean + bad records + legacy quirks
 │   └── requirements.txt
-├── pipelines/                     # YAML mirroring the UI-configured pipelines
-│   ├── mysql/                     # {metadata,auto_classification,profiler}.yaml,
-│   │                              # dq_tests_{customers,products,orders}.yaml
-│   └── oracle/                    # same pipelines, one dq_tests_<table>.yaml per tested table
+├── pipelines/                     # optional test-case YAML (dq_tests_<table>.yaml)
+│   ├── mysql/                     # dq_tests_{customers,products,orders}.yaml
+│   └── oracle/                    # one dq_tests_<table>.yaml per tested table
 ├── .env.example
 ├── README.md                      # developer setup
 ├── docs/                          # learning-path.md (participants), reference.md
@@ -104,7 +103,7 @@ Configured in the UI, deployed to the bundled Airflow with no schedule:
 4. Profiler
 5. A logical test suite containing every test listed for that source (the tests span several tables)
 
-`pipelines/<source>/` holds YAML equivalents as reference and fallback, runnable from the ingestion container with `metadata ingest|classify|profile|test -c`. Tests get one `dq_tests_<table>.yaml` per table: YAML can only create test cases in a single-table run, and a logical-suite run only executes tests that already exist. Test case names match the README, so tests created in the UI and from YAML don't duplicate. Env placeholders only; no secrets.
+`pipelines/<source>/` holds only the test-case YAML, an optional shortcut run from the ingestion container with `metadata test -c`. (The service, Metadata, Profiler and other agent YAML was dropped once the whole path was verified through the API: the UI is the supported path.) Tests get one `dq_tests_<table>.yaml` per table: YAML can only create test cases in a single-table run, and a logical-suite run only executes tests that already exist. Test case names match the README, so tests created in the UI and from YAML don't duplicate. Env placeholders only; no secrets.
 
 ## 3. Phase 1 — MySQL e-commerce
 
@@ -178,7 +177,7 @@ Scaling: `DEPARTMENTS` is seeded once (about 12 rows). Each new employee gets 1�
 
 Connection from OpenMetadata: `source-oracle:1521`, service name `XEPDB1`, views included.
 
-Found while building M5: OpenMetadata's Oracle connector reads `DBA_TABLES`, so `seed.py --init` grants the app user `SELECT ANY DICTIONARY` (using the SYSTEM password from `.env`). That exposes `SYS`, so every Oracle pipeline filters schemas with `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names. View lineage is its own pipeline (`pipelines/oracle/lineage.yaml`, source type `oracle-lineage`).
+Found while building M5: OpenMetadata's Oracle connector reads `DBA_TABLES`, so `seed.py --init` grants the app user `SELECT ANY DICTIONARY` (using the SYSTEM password from `.env`). That exposes `SYS`, so every Oracle pipeline filters schemas with `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names. View lineage is its own agent (Lineage), run after Metadata.
 
 ### Legacy quirks (exactly three)
 

@@ -1,5 +1,5 @@
 # Data quality tests for dqlab.orders. Creates any missing test cases (same
-# names as the README, so UI-created ones are reused, not duplicated) and runs
+# names as docs/reference.md, so UI-created ones are reused, not duplicated) and runs
 # every test on the table.
 #   docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/mysql/dq_tests_orders.yaml
 source:

@@ -10,7 +10,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 
 - `compose.yml`: includes `openmetadata/docker-compose.yml` (official, pinned) merged with `openmetadata/docker-compose.override.yml`, plus `sources/docker-compose.yml`.
 - `seed/`: `seed.py` (append bad and clean rows), `fix_defects.py` (delete the bad rows), `mysql_generators.py` and `oracle_generators.py` (defects and the test that catches each), `mysql_schema.py`, `oracle_schema.py`.
-- `pipelines/mysql/` and `pipelines/oracle/`: YAML twins of the UI pipelines, including `dq_tests_*.yaml`.
+- `pipelines/mysql/` and `pipelines/oracle/`: only `dq_tests_*.yaml`, an optional shortcut that creates the test cases. Services and agents are set up in the UI.
 - `.env` (git-ignored, holds real credentials and the ingestion-bot JWT) and `.env.example` (placeholders only).
 
 ## Rules
@@ -40,7 +40,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 ## Environment gotchas
 
 - The ingestion-bot JWT in `.env` changes whenever OpenMetadata's data is wiped; fetch the new one (Settings > Bots, or `GET /users/auth-mechanism/<bot user id>`). Agents are ingestion pipelines; see "Agents and AutoPilot" in docs/reference.md.
-- Oracle: OpenMetadata's connector needs dictionary access (`seed.py --target oracle --init` grants `SELECT ANY DICTIONARY`), which exposes `SYS`, so every Oracle pipeline needs the schema filter `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names (table `dqlab.EMPLOYEES` has column `emp_id`), so test cases need lowercase column names. A test case created wrongly is reused with `forceUpdate: false`: delete it first. View lineage needs source type `oracle-lineage`.
+- Oracle: OpenMetadata's connector needs dictionary access (`seed.py --target oracle --init` grants `SELECT ANY DICTIONARY`), which exposes `SYS`, so every Oracle pipeline needs the schema filter `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names (table `dqlab.EMPLOYEES` has column `emp_id`), so test cases need lowercase column names. A test case created wrongly is reused with `forceUpdate: false`: delete it first.
 
 - The user's network inspects TLS (Cisco Umbrella). Containers can't download from GitHub at runtime (`CERTIFICATE_VERIFY_FAILED`), which is why PII auto-classification stays off. On the Windows host use `curl --ssl-no-revoke` and `git -c http.schannelCheckRevoke=false` when a download fails. Expect the same problem for anything Oracle-related that downloads from GitHub.
 - Windows: OpenMetadata's MySQL data must stay on a named volume. A bind mount on the case-insensitive Windows filesystem crashed InnoDB.
