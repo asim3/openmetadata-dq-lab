@@ -1,0 +1,87 @@
+# Data quality tests for EMPLOYEES in the Oracle source. Creates any missing test
+# cases (same names as docs/reference.md, so UI-created ones are reused, not
+# duplicated) and runs every test on the table.
+#   docker exec --env-file .env openmetadata_ingestion metadata test -c /tmp/dqlab-pipelines/oracle/dq_tests_employees.yaml
+source:
+  type: testsuite
+  serviceName: dqlab_oracle
+  sourceConfig:
+    config:
+      type: TestSuite
+      entityFullyQualifiedName: dqlab_oracle.default.dqlab.EMPLOYEES
+processor:
+  type: orm-test-runner
+  config:
+    forceUpdate: false
+    testCases:
+      - name: employees_full_name_not_null
+        description: Every employee has a name.
+        testDefinitionName: columnValuesToBeNotNull
+        columnName: full_name
+        computePassedFailedRowCount: true
+      - name: employees_staff_no_unique
+        description: No two employees share a staff number. Both copies of a duplicate count as failed rows.
+        testDefinitionName: columnValuesToBeUnique
+        columnName: staff_no
+        computePassedFailedRowCount: true
+      - name: employees_hire_date_format
+        description: HIRE_DATE is text (a legacy quirk) and must look like YYYY-MM-DD.
+        testDefinitionName: columnValuesToMatchRegex
+        columnName: hire_date
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: regex
+            value: "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+      - name: employees_status_allowed
+        description: STATUS is one character, A active or T terminated. Oracle compares case-sensitively, so a lowercase code or a blank fails.
+        testDefinitionName: columnValuesToBeInSet
+        columnName: status
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: allowedValues
+            value: "['A', 'T']"
+          - name: matchEnum
+            value: "true"
+      - name: employees_no_orphan_dept
+        description: Every employee points at an existing department (the source has no foreign keys).
+        testDefinitionName: tableCustomSQLQuery
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: sqlExpression
+            value: >-
+              SELECT e.EMP_ID, e.DEPT_ID
+              FROM EMPLOYEES e
+              LEFT JOIN DEPARTMENTS d ON d.DEPT_ID = e.DEPT_ID
+              WHERE d.DEPT_ID IS NULL
+          - name: strategy
+            value: ROWS
+          - name: operator
+            value: "<="
+          - name: threshold
+            value: "0"
+      - name: employees_dept_name_matches_master
+        description: EMPLOYEES.DEPT_NAME is a copy of DEPARTMENTS.DEPT_NAME (a legacy quirk) and must still agree with it.
+        testDefinitionName: tableCustomSQLQuery
+        computePassedFailedRowCount: true
+        parameterValues:
+          - name: sqlExpression
+            value: >-
+              SELECT e.EMP_ID, e.DEPT_NAME, d.DEPT_NAME AS MASTER_NAME
+              FROM EMPLOYEES e
+              JOIN DEPARTMENTS d ON d.DEPT_ID = e.DEPT_ID
+              WHERE e.DEPT_NAME <> d.DEPT_NAME
+          - name: strategy
+            value: ROWS
+          - name: operator
+            value: "<="
+          - name: threshold
+            value: "0"
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  openMetadataServerConfig:
+    hostPort: http://openmetadata-server:8585/api
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${DQLAB_INGESTION_BOT_JWT}

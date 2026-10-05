@@ -1,0 +1,35 @@
+# Auto classification for the lab's Oracle source: mirrors the UI's Auto
+# Classification agent with "Store Sample Data" on. PII tagging is off: it
+# downloads a spaCy model from GitHub, which TLS-inspecting networks block.
+#   docker exec --env-file .env openmetadata_ingestion metadata classify -c /tmp/dqlab-pipelines/oracle/auto_classification.yaml
+source:
+  type: oracle
+  serviceName: dqlab_oracle
+  serviceConnection:
+    config:
+      type: Oracle
+      hostPort: source-oracle:1521
+      username: ${SOURCE_ORACLE_USER}
+      password: ${SOURCE_ORACLE_PASSWORD}
+      oracleConnectionType:
+        oracleServiceName: XEPDB1
+  sourceConfig:
+    config:
+      type: AutoClassification
+      schemaFilterPattern:
+        includes:
+          - (?i)^dqlab$
+      storeSampleData: true
+      enableAutoClassification: false
+processor:
+  type: orm-profiler
+  config: {}
+sink:
+  type: metadata-rest
+  config: {}
+workflowConfig:
+  openMetadataServerConfig:
+    hostPort: http://openmetadata-server:8585/api
+    authProvider: openmetadata
+    securityConfig:
+      jwtToken: ${DQLAB_INGESTION_BOT_JWT}

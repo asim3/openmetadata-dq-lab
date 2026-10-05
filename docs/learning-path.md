@@ -9,6 +9,7 @@ Run the `python` and `docker compose` commands from the repo root, with the virt
 1. Seed a clean baseline, then catalog, profile and test it: every test is green.
 2. Seed "Monday's batch" with bad rows, re-run the profiler and the tests, and triage the red flags.
 3. Work the incidents: find the cause, fix the source rows, re-run the tests until they're green, and resolve the incidents (item 9).
+4. Optional, a second source: repeat the loop on Oracle's legacy HR data, with views and lineage (items 10 to 14).
 
 The seeder prints what it injected, and which test should catch each defect, so you can check your triage against it.
 
@@ -128,6 +129,69 @@ Red tests are the start of a process, not the end of one. This is the workflow a
 
 To start over instead of fixing rows one by one, ask your instructor to follow [Resetting](../README.md#resetting): that restores the clean baseline in the source database.
 
+## Phase 2: the Oracle legacy HR source
+
+Items 10 to 14 repeat the loop on a messier source: Oracle, with views, lineage and legacy quirks. Your instructor starts Oracle first ([README: Phase 2](../README.md#phase-2-add-oracle)). The tests, quirks and views are listed in the [reference](reference.md#oracle-tests-and-the-defects-they-catch).
+
+### 10. Add the Oracle service
+
+```sh
+python seed/seed.py --target oracle --init --bad-rate 0 --days 7
+```
+
+Then Settings > Services > Databases > Add New Service > Oracle.
+
+| Field | Value |
+|---|---|
+| Service name | `dqlab_oracle`. The YAML files and test names assume this name. |
+| Username / Password | `SOURCE_ORACLE_USER` / `SOURCE_ORACLE_PASSWORD` from `.env` |
+| Host and Port | `source-oracle:1521`, not `localhost` |
+| Oracle Connection Type | Oracle Service Name: `XEPDB1` |
+
+Test the connection, then on What to Ingest set:
+
+- **Schema Filter Pattern, include:** `(?i)^dqlab$`. This is essential. The lab user can read Oracle's data dictionary, which also lists thousands of `SYS` tables, and without the filter ingestion tries to catalog them all.
+- **Include Views:** on.
+
+Click Create & Deploy. As in item 3, AutoPilot adds agents later: give each one you keep the same schema filter and an On Demand schedule, and delete the Usage agent. You should see five tables and two views under `dqlab_oracle > default > dqlab`. OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
+
+Then run auto classification and the profiler as in items 4 and 6, with the same schema filter. Only the tables are profiled.
+
+### 11. Explore view lineage
+
+Add a Lineage agent on the Agents tab, with the same schema filter, and run it. It reads each view's SQL and links the view to the tables it selects from. Open `v_current_employees` and `v_monthly_payroll` and click Lineage. The first reads `EMPLOYEES` and `JOB_HISTORY`; the second reads `EMPLOYEES`, `SALARIES` and `ALLOWANCES`.
+
+### 12. Explain why `V_MONTHLY_PAYROLL` disagrees
+
+Compare the view's row count with the raw table's: after the baseline `EMPLOYEES` has 100 rows and the view about 90. Open the view's definition and find `WHERE e.STATUS = 'A'`. Terminated staff drop out, and so does any row with a bad status. The view isn't broken; it quietly answers a different question than the raw tables do, which is why a report's totals need checking against their sources.
+
+### 13. Hunt the legacy quirks
+
+Seed a bad batch and look for the three quirks:
+
+```sh
+python seed/seed.py --target oracle --bad-rate 0.15
+```
+
+- **Text dates:** `HIRE_DATE` is a `VARCHAR2`. Its column profile has no date min/max. Find the rows in a format other than `YYYY-MM-DD`.
+- **Status codes:** `STATUS` is `CHAR(1)`. Check its value distribution for `a`, a blank or junk.
+- **Drifted names:** `EMPLOYEES.DEPT_NAME` duplicates `DEPARTMENTS.DEPT_NAME`. Find the rows where they disagree.
+
+### 14. Test, triage and fix
+
+Create the 12 tests in [the Oracle test table](reference.md#oracle-tests-and-the-defects-they-catch), using the lowercase column names the UI shows. Create a Bundle Suite named `dqlab_oracle_suite` with all 12 and an On Demand pipeline. On the clean baseline all 12 are green.
+
+After the bad batch from item 13, re-run the Profiler agent and the suite. Every test goes red, and the failed-row counts match the seeder's summary (uniqueness counts both copies). Shortcut: [run the four `pipelines/oracle/dq_tests_*.yaml` files](reference.md#pipelines-from-yaml) to create the test cases, then build the Bundle Suite in the UI.
+
+Work the incidents as in item 9. The owners' fix is:
+
+```sh
+python seed/fix_defects.py --target oracle --dry-run
+python seed/fix_defects.py --target oracle
+```
+
+It deletes the bad rows (for a duplicate, the higher id), plus the history, salary and allowance rows left without an employee, so those tables shrink by more than the dry run shows. Re-run the profiler and the suite: all 12 are green.
+
 ## Troubleshooting
 
 - **Auto classification fails with `CERTIFICATE_VERIFY_FAILED` for raw.githubusercontent.com**: this happens when Enable Auto Classification (PII tagging) is on. It downloads a spaCy language model (`en_core_web_md`) from GitHub the first time it runs, and networks that inspect TLS (corporate proxies) break that download. Turn it back off; sample data is still stored.
@@ -135,3 +199,6 @@ To start over instead of fixing rows one by one, ask your instructor to follow [
 - **Lineage agent shows Failed**: expected. It needs query history (`mysql.general_log`), which the lab's user can't read. The lab doesn't use lineage, so delete the Lineage and Usage agents.
 - **Two Profiler or two AutoClassification agents**: you added your own and AutoPilot added its copy an hour later. Keep one of each, configured as in items 4 and 6, and delete the other.
 - **Can't connect to MySQL from the service wizard**: use `source-mysql:3306`, not `localhost`.
+- **Oracle connection test fails, or ingestion lists thousands of `sys` tables**: see the Oracle entries in the [README troubleshooting](../README.md#troubleshooting). Both come down to the dictionary grant (`seed.py --target oracle --init`) and the `(?i)^dqlab$` schema filter.
+- **An Oracle test run fails with `StopIteration`**: the test's column name must be lowercase, as the UI shows it. Delete the test case and create it again.
+- **Can't connect to Oracle from the service wizard**: use `source-oracle:1521`, not `localhost`.

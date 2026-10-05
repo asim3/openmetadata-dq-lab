@@ -178,6 +178,8 @@ Scaling: `DEPARTMENTS` is seeded once (about 12 rows). Each new employee gets 1â
 
 Connection from OpenMetadata: `source-oracle:1521`, service name `XEPDB1`, views included.
 
+Found while building M5: OpenMetadata's Oracle connector reads `DBA_TABLES`, so `seed.py --init` grants the app user `SELECT ANY DICTIONARY` (using the SYSTEM password from `.env`). That exposes `SYS`, so every Oracle pipeline filters schemas with `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names. View lineage is its own pipeline (`pipelines/oracle/lineage.yaml`, source type `oracle-lineage`).
+
 ### Legacy quirks (exactly three)
 
 1. **Dates as text.** `EMPLOYEES.HIRE_DATE` is `VARCHAR2`: mostly `YYYY-MM-DD`, mixed formats in bad rows.

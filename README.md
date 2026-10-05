@@ -5,7 +5,7 @@ A local, testing-only lab for learning OpenMetadata's catalog and data-quality f
 | Phase | Source | Domain | Status |
 |---|---|---|---|
 | 1 | MySQL 8.4 | E-commerce: products, customers, orders | Ready |
-| 2 | Oracle 21c XE | Legacy HR/payroll: views, lineage, legacy quirks | Planned |
+| 2 | Oracle 21c XE | Legacy HR/payroll: views, lineage, legacy quirks | Ready (opt-in) |
 
 Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigger them, so an instructor controls the pace. Out of scope: production hardening, auth/SSO, backups, HA, Kubernetes.
 
@@ -31,20 +31,22 @@ Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigg
                                        v
                                    sources/docker-compose.yml
  seed/seed.py -- 127.0.0.1:3307 -->  source-mysql: MySQL 8.4, database dqlab
+ seed/seed.py -- 127.0.0.1:1521 -->  source-oracle: Oracle 21c XE, XEPDB1 (profile "oracle", Phase 2)
 ```
 
 - `compose.yml` includes both compose files. `openmetadata/docker-compose.yml` is the official release file, pinned and never edited (see [Pinned OpenMetadata version](#pinned-openmetadata-version)). The one change the lab needs, a named volume for OpenMetadata's MySQL data, lives in `openmetadata/docker-compose.override.yml`, which `compose.yml` merges in.
 - `source-mysql` is separate from OpenMetadata's internal MySQL: its own service, host port (3307) and volume. It joins OpenMetadata's network, so OpenMetadata reaches it as `source-mysql:3306`.
 - `seed/seed.py` runs on your machine and appends data through `127.0.0.1:3307`. `seed/fix_defects.py` removes the bad rows again.
-- `pipelines/mysql/` holds YAML versions of the UI pipelines, as reference and fallback.
+- `source-oracle` (Phase 2) follows the same pattern: its own service, host port (1521) and volume, started only with `--profile oracle`. OpenMetadata reaches it as `source-oracle:1521`, service name `XEPDB1`.
+- `pipelines/mysql/` and `pipelines/oracle/` hold YAML versions of the UI pipelines, as reference and fallback.
 
 ## Prerequisites
 
 - Docker with Compose v2.20 or newer (the root file uses `include:`).
-- Docker memory: 8 GB and 4 vCPU recommended (Docker Desktop: Settings > Resources). Phase 1 idles at about 5 GB.
-- About 10 GB of disk for images.
+- Docker memory: 8 GB and 4 vCPU recommended (Docker Desktop: Settings > Resources). Phase 1 idles at about 5 GB; Oracle adds about 2 GB, so give Docker more if you run both.
+- About 10 GB of disk for images, plus about 2 GB if you add Oracle.
 - Python 3.10 or newer for the seeder.
-- Free host ports: 3306 (OpenMetadata's MySQL), 3307, 8080, 8585, 8586, 9200, 9300.
+- Free host ports: 3306 (OpenMetadata's MySQL), 3307, 8080, 8585, 8586, 9200, 9300, and 1521 for Oracle.
 
 ## Quickstart (Phase 1)
 
@@ -94,6 +96,8 @@ docker compose up -d --wait source-mysql
 python seed/seed.py --init --bad-rate 0 --days 7
 ```
 
+For Oracle, do the same with `source-oracle` and the volume `dqlab_source-oracle-data` (add `--profile oracle` to the compose commands).
+
 OpenMetadata keeps its catalog, profiles and test history for the `dqlab_mysql` tables. For a clean catalog too, delete the service in Settings > Services > Databases > `dqlab_mysql` (hard delete) and add it again.
 
 To reset everything:
@@ -115,7 +119,10 @@ docker compose down -v
 - **OpenMetadata can't reach MySQL**: use `source-mysql:3306`, not `localhost`. Inside Docker, `localhost` is the ingestion container itself. Check name resolution with `docker exec openmetadata_ingestion getent hosts source-mysql`.
 - **Git Bash on Windows turns `/tmp/...` into a Windows path**: prefix the `docker` commands with `MSYS_NO_PATHCONV=1`, or use PowerShell.
 - **`seed.py: cannot connect to source MySQL`**: start the stack and wait for `source-mysql` to be healthy. Also check `SOURCE_MYSQL_PORT` in `.env`.
-- **`table(s) ... not found`**: run the seeder once with `--init`.
+- **`table(s) ... not found`**: run the seeder once with `--init` (add `--target oracle` for Oracle).
+- **`seed.py: cannot connect to source Oracle`**: start it with `docker compose --profile oracle up -d` and wait until `source-oracle` is healthy. The first start creates the database and takes a minute or two.
+- **Oracle connection test fails with `ORA-00942` on `DBA_TABLES`**: the lab user lacks dictionary access. `seed.py --target oracle --init` grants it (it needs `SOURCE_ORACLE_SYSTEM_PASSWORD` in `.env`); run that once.
+- **Oracle ingestion never ends, or lists thousands of `sys` tables**: the schema filter is missing. Include only `(?i)^dqlab$` (learning path, item 10).
 - **Profiler row count lags `COUNT(*)`**: rows were inserted without `ANALYZE TABLE`. The seeder does this for you; after manual inserts, run it yourself, then re-run the profiler.
 
 Problems inside the OpenMetadata UI (auto classification, the profiler, lineage) are covered in [docs/learning-path.md](docs/learning-path.md#troubleshooting).
@@ -129,6 +136,27 @@ Problems inside the OpenMetadata UI (auto classification, the profiler, lineage)
 
 To upgrade, replace the file with another release's `docker-compose.yml` as-is, then update this section.
 
-## Phase 2 (planned)
+## Phase 2: add Oracle
 
-An Oracle 21c XE source with legacy HR/payroll data, views and lineage, started with `docker compose --profile oracle up -d`. See [PLAN.md](PLAN.md).
+An Oracle 21c XE source with legacy HR/payroll data, two views and lineage. It's opt-in, so Phase 1 never needs it, and Phase 1's data is untouched.
+
+1. Make sure `.env` has the `SOURCE_ORACLE_*` values from `.env.example`. If your `.env` predates Phase 2, copy them over.
+2. Start Oracle next to the running stack:
+
+   ```sh
+   docker compose --profile oracle up -d
+   ```
+
+   The first start pulls the image (about 1 GB) and creates the database, which takes a minute or two. Wait for `source-oracle` to show healthy in `docker compose ps`.
+
+3. Seed a clean baseline (run `pip install -r seed/requirements.txt` again if you set up before Phase 2):
+
+   ```sh
+   python seed/seed.py --target oracle --init --bad-rate 0 --days 7
+   ```
+
+   `--init` creates the tables and views, and lets the lab user read Oracle's data dictionary, which OpenMetadata's Oracle connector requires.
+
+4. Hand over to the participants: [learning path, items 10 to 14](docs/learning-path.md#phase-2-the-oracle-legacy-hr-source).
+
+The Oracle pipelines were verified by running the YAML in `pipelines/oracle/` and reading the results through the REST API. The UI steps in the learning path use the same settings.

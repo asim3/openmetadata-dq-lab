@@ -229,6 +229,8 @@ def seed_oracle(args: argparse.Namespace, seed: int) -> None:
     fake.seed_instance(seed)
     port = int(os.environ.get("SOURCE_ORACLE_PORT", "1521"))
 
+    if args.init:
+        grant_catalog_access(port)
     conn = connect_oracle(port)
     try:
         with conn.cursor() as cur:
@@ -265,13 +267,27 @@ def seed_oracle(args: argparse.Namespace, seed: int) -> None:
     print_oracle_summary(port, existing.now, seed, args, created, batch, totals, view_totals, problems)
 
 
-def connect_oracle(port: int):
+def grant_catalog_access(port: int) -> None:
+    """Let the lab user read Oracle's data dictionary, which OpenMetadata's connector needs.
+
+    The connector's connection test reads DBA_TABLES, and a plain app user can't. The
+    grant needs SYSTEM, so it runs here, on --init, and is safe to repeat.
+    """
+    conn = connect_oracle(port, "SYSTEM", require_env("SOURCE_ORACLE_SYSTEM_PASSWORD"))
+    try:
+        with conn.cursor() as cur:
+            cur.execute(f"GRANT SELECT ANY DICTIONARY TO {require_env('SOURCE_ORACLE_USER')}")
+    finally:
+        conn.close()
+
+
+def connect_oracle(port: int, user: str | None = None, password: str | None = None):
     try:
         import oracledb
     except ImportError as exc:
         raise SeedError("missing dependency 'oracledb'. Run: pip install -r seed/requirements.txt") from exc
-    user = require_env("SOURCE_ORACLE_USER")
-    password = require_env("SOURCE_ORACLE_PASSWORD")
+    user = user or require_env("SOURCE_ORACLE_USER")
+    password = password or require_env("SOURCE_ORACLE_PASSWORD")
     try:
         return oracledb.connect(user=user, password=password,
                                 dsn=f"{ORACLE_HOST}:{port}/{oschema.SERVICE_NAME}", tcp_connect_timeout=10)

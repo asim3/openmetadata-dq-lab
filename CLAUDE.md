@@ -4,23 +4,23 @@ Guidance for Claude Code working in this repo. Human-facing docs are in [README.
 
 ## What this is
 
-A local, testing-only lab for teaching OpenMetadata's catalog and data-quality features. `seed/seed.py` fills a source MySQL with fake data, a share of it deliberately bad. OpenMetadata 2.0.2 catalogs, profiles and tests it. `seed/fix_defects.py` removes the bad rows again. Phase 1 (MySQL) is built. Phase 2 (Oracle) is in progress: M4 is built (compose service, `oracle_schema.py`, `oracle_generators.py`, `seed.py --target oracle`); M5 (YAML pipelines, docs, `fix_defects.py` for Oracle) is not.
+A local, testing-only lab for teaching OpenMetadata's catalog and data-quality features. `seed/seed.py` fills a source MySQL with fake data, a share of it deliberately bad. OpenMetadata 2.0.2 catalogs, profiles and tests it. `seed/fix_defects.py` removes the bad rows again. Phase 1 (MySQL) and Phase 2 (Oracle, opt-in under the `oracle` compose profile) are both built (M1 to M5).
 
 ## Layout
 
 - `compose.yml`: includes `openmetadata/docker-compose.yml` (official, pinned) merged with `openmetadata/docker-compose.override.yml`, plus `sources/docker-compose.yml`.
-- `seed/`: `seed.py` (append bad and clean rows), `fix_defects.py` (delete the bad rows), `mysql_generators.py` (defects and the test that catches each), `mysql_schema.py`.
-- `pipelines/mysql/`: YAML twins of the UI pipelines, including `dq_tests_*.yaml`.
+- `seed/`: `seed.py` (append bad and clean rows), `fix_defects.py` (delete the bad rows), `mysql_generators.py` and `oracle_generators.py` (defects and the test that catches each), `mysql_schema.py`, `oracle_schema.py`.
+- `pipelines/mysql/` and `pipelines/oracle/`: YAML twins of the UI pipelines, including `dq_tests_*.yaml`.
 - `.env` (git-ignored, holds real credentials and the ingestion-bot JWT) and `.env.example` (placeholders only).
 
 ## Rules
 
 - **Never edit `openmetadata/docker-compose.yml`.** It is the upstream 2.0.2 release file, checksummed in the README. Lab changes go in `openmetadata/docker-compose.override.yml`.
-- Phase 2 was started on the user's go-ahead (2026-10-05, M4). Do M5 only when asked. If something in PLAN.md doesn't work in practice, stop and ask; once a change is agreed, update PLAN.md to match.
+- If something in PLAN.md doesn't work in practice, stop and ask; once a change is agreed, update PLAN.md to match.
 - **Real credentials go only in `.env`.** Never commit it or put secrets in docs or YAML.
 - **Git:** there is no `gh` CLI and no PRs. Commit, then push straight to `main` when asked. End commit messages with the Co-Authored-By line from the session's attribution instructions.
-- **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in `pipelines/mysql/dq_tests_*.yaml`, the test table in `docs/reference.md`, and `fix_defects.py`.
-- Keep the YAML test names, the README test table and the OpenMetadata test cases identical (13 tests, suite `dqlab_mysql_suite`).
+- **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in `pipelines/<source>/dq_tests_*.yaml`, the test table in `docs/reference.md`, and `fix_defects.py`. The same goes for `oracle_generators.py`.
+- Keep the YAML test names, the README test table and the OpenMetadata test cases identical (MySQL: 13 tests, suite `dqlab_mysql_suite`; Oracle: 12 tests, suite `dqlab_oracle_suite`).
 
 ## Documentation conventions
 
@@ -38,6 +38,8 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 - `docker compose down` keeps data; `down -v` wipes every named volume, OpenMetadata's MySQL included. Ask before wiping.
 
 ## Environment gotchas
+
+- Oracle: OpenMetadata's connector needs dictionary access (`seed.py --target oracle --init` grants `SELECT ANY DICTIONARY`), which exposes `SYS`, so every Oracle pipeline needs the schema filter `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names (table `dqlab.EMPLOYEES` has column `emp_id`), so test cases need lowercase column names. A test case created wrongly is reused with `forceUpdate: false`: delete it first. View lineage needs source type `oracle-lineage`.
 
 - The user's network inspects TLS (Cisco Umbrella). Containers can't download from GitHub at runtime (`CERTIFICATE_VERIFY_FAILED`), which is why PII auto-classification stays off. On the Windows host use `curl --ssl-no-revoke` and `git -c http.schannelCheckRevoke=false` when a download fails. Expect the same problem for anything Oracle-related that downloads from GitHub.
 - Windows: OpenMetadata's MySQL data must stay on a named volume. A bind mount on the case-insensitive Windows filesystem crashed InnoDB.
