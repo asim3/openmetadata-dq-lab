@@ -2,6 +2,8 @@
 
 Hands-on walkthrough for the lab. It assumes the lab is already running: your instructor or the [README](../README.md) has started the stack, and you can log in at http://localhost:8585 (`admin@open-metadata.org` / `admin`).
 
+Run the `python` and `docker compose` commands from the repo root, with the virtual environment from the README quickstart active.
+
 ## Class flow
 
 1. Seed a clean baseline, then catalog, profile and test it: every test is green.
@@ -108,7 +110,7 @@ Red tests are the start of a process, not the end of one. This is the workflow a
    DELETE FROM dqlab.orders WHERE amount <= 0 OR quantity <= 0;
    ```
 
-5. **Re-run and resolve.** Re-run the Bundle Suite pipeline (re-run the Profiler too if you changed row counts) and confirm the tests are green again. Then resolve each incident with a note on the cause and the fix. The history stays in OpenMetadata as an audit trail.
+5. **Re-run and resolve.** Re-run the Bundle Suite pipeline (re-run the Profiler too if you changed row counts) and confirm the tests are green again. Incidents don't close on their own when a test turns green, so resolve each one yourself, with a note on the cause and the fix. The history stays in OpenMetadata as an audit trail.
 
 To start over instead of fixing rows one by one, ask your instructor to follow [Resetting](../README.md#resetting): that restores the clean baseline in the source database.
 
