@@ -16,10 +16,10 @@ The seeder prints what it injected, and which test should catch each defect, so 
 ## 1. Seed a clean baseline
 
 ```sh
-python seed/seed.py --init --bad-rate 0 --days 7
+python seed/seed.py --init --bad-rate 0 --days 7 --seed 1
 ```
 
-The tables must exist before OpenMetadata can ingest them.
+The tables must exist before OpenMetadata can ingest them. `--seed 1` makes your numbers match the ones quoted below. **You should see** 200 products, 500 customers and 1382 orders in the seeder's summary.
 
 ## 2. Add the MySQL service and test the connection
 
@@ -38,22 +38,25 @@ There is no Save button. Click Next: What to Ingest, keep the defaults (scan eve
 
 ## 3. Run metadata ingestion
 
-Create & Deploy starts **AutoPilot**, an OpenMetadata feature that creates agents for a new service and runs them without you adding any. You don't press anything for this. It runs the Metadata agent straight away. About an hour later it adds more agents, all on a weekly schedule. Expect these on the service's Agents tab:
+Create & Deploy starts **AutoPilot**, an OpenMetadata feature that creates agents for a new service without you adding any. You don't press anything for this. It runs the Metadata agent straight away and adds more agents, all on a weekly schedule, within the first hour. Open the service's Agents tab and look before you add an agent of your own, because AutoPilot's copy would duplicate it. Then fix them all in one pass:
 
 | Agent | What to do |
 |---|---|
 | Metadata | Keep it. Edit it (`⋮` > Edit) and set the schedule to On Demand. It has already run once. |
 | Lineage | Delete it. It fails (same `mysql.general_log` denial) and the lab doesn't use lineage. |
 | Usage | Delete it. It finds 0 queries. |
-| Profiler, AutoClassification | They appear about an hour later. Items 4 and 6 configure them. |
+| AutoClassification | Keep it. Turn on Store Sample Data, turn off Enable Auto Classification (PII), set On Demand. Item 4. |
+| Profiler | Keep it. Remove its classification filter (`Tier1`, `Tier2`), set On Demand. Item 6. |
+
+Apart from Metadata, AutoPilot's agents don't run yet: they wait for their weekly schedule. So click Run on each one after you've edited it.
 
 Don't click Trigger AutoPilot, if you see it: it recreates the agents you deleted. The blue "Agents deploying" banner can stay stuck on a count like "2 queued" after you edit the agents; ignore it.
 
-Then explore `dqlab_mysql > default > dqlab`: three tables, their columns and types. Click Run on the Metadata agent any time you want to re-ingest.
+Then explore `dqlab_mysql > default > dqlab`: **you should see** three tables (`customers`, `orders`, `products`), their columns and types. Click Run on the Metadata agent any time you want to re-ingest.
 
 ## 4. Run auto classification for sample data
 
-Edit the AutoClassification agent that AutoPilot created (`⋮` > Edit). Turn on Store Sample Data, turn off Enable Auto Classification, and set the schedule to On Demand. Save, then click Run. If the agent isn't there yet, add one yourself on the Agents tab with the same settings, and delete AutoPilot's copy when it appears an hour later. Each table gets a Sample Data tab with 50 rows (the Row Limit dropdown above it is only a display limit). In OpenMetadata 2.x this is the only pipeline that stores table sample data.
+Edit the AutoClassification agent that AutoPilot created (`⋮` > Edit). Turn on Store Sample Data, turn off Enable Auto Classification, and set the schedule to On Demand. Save, then click Run. If the agent isn't there yet, add one yourself on the Agents tab with the same settings, and delete AutoPilot's copy if it shows up later. **You should see** a Sample Data tab with 50 rows on each table (the Row Limit dropdown above it is only a display limit). In OpenMetadata 2.x this is the only pipeline that stores table sample data.
 
 Enable Auto Classification (PII tagging) stays off in this lab. It downloads a spaCy language model from GitHub the first time it runs, and networks that inspect TLS block that download. On an open network, you can turn it on to get suggested PII tags on columns such as `email` and `full_name`.
 
@@ -68,13 +71,13 @@ Edit the Profiler agent that AutoPilot created (`⋮` > Edit) and make two chang
 - **Remove the classification filter.** AutoPilot's profiler only profiles tables tagged `Tier1` or `Tier2` (Filter Patterns > classification filter). None of the lab's tables are, so the run succeeds but profiles nothing ("Processed records: 0, Filtered: 3" in the logs). Delete both entries.
 - Set the schedule to On Demand.
 
-If the agent isn't there yet, add a Profiler agent yourself with those settings, and delete AutoPilot's copy when it appears an hour later. Save and click Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column. Column Profile shows nulls, distinct values and min/max per column.
+If the agent isn't there yet, add a Profiler agent yourself with those settings, and delete AutoPilot's copy if it shows up later. Save and click Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column: **you should see** 200 for `products`, 500 for `customers` and 1382 for `orders`. Column Profile shows nulls, distinct values and min/max per column.
 
 ## 7. Create the tests and run them: everything green
 
 Create the 13 tests in [the test table](reference.md#tests-and-the-defects-they-catch). For each one, open the table, go to Data Observability, add a test case, and give it exactly the name, column, type and parameters in the table. Turn on Compute Row Count for each.
 
-Then go to Data Quality > Test Suites and create a Bundle Suite named `dqlab_mysql_suite`. A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Add all 13 test cases, add a pipeline with an On Demand schedule, and run it. All 13 tests pass.
+Then go to Data Quality > Test Suites and create a Bundle Suite named `dqlab_mysql_suite`. A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Add all 13 test cases, add a pipeline with an On Demand schedule, and run it. **You should see** all 13 tests pass.
 
 Shortcut: [run the three `dq_tests_*.yaml` files](reference.md#pipelines-from-yaml) to create the test cases (this needs the ingestion bot's token in `.env`), then build the Bundle Suite in the UI. The test names match, so nothing is duplicated.
 
@@ -136,8 +139,10 @@ Items 10 to 14 repeat the loop on a messier source: Oracle, with views, lineage 
 ### 10. Add the Oracle service
 
 ```sh
-python seed/seed.py --target oracle --init --bad-rate 0 --days 7
+python seed/seed.py --target oracle --init --bad-rate 0 --days 7 --seed 1
 ```
+
+**You should see** 12 departments, 100 employees, 199 job history, 154 salary and 193 allowance rows, and `V_MONTHLY_PAYROLL` with 91 rows.
 
 Then Settings > Services > Databases > Add New Service > Oracle.
 
@@ -153,7 +158,7 @@ Test the connection, then on What to Ingest set:
 - **Schema Filter Pattern, include:** `(?i)^dqlab$`. This is essential. The lab user can read Oracle's data dictionary, which also lists thousands of `SYS` tables, and without the filter ingestion tries to catalog them all.
 - **Include Views:** on.
 
-Click Create & Deploy. As in item 3, AutoPilot adds agents about an hour later (for Oracle, expect the same set as for MySQL, and check the Agents tab): give each one you keep the same schema filter and an On Demand schedule, and delete the Usage agent. [Agents and AutoPilot](reference.md#agents-and-autopilot) explains each agent. You should see five tables and two views under `dqlab_oracle > default > dqlab`. OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
+Click Create & Deploy. As in item 3, AutoPilot adds agents (for Oracle, expect the same set as for MySQL, and check the Agents tab): give each one you keep the same schema filter and an On Demand schedule, and delete the Usage agent. [Agents and AutoPilot](reference.md#agents-and-autopilot) explains each agent. **You should see** five tables and two views under `dqlab_oracle > default > dqlab`, and a Sample Data tab with 50 rows on the big tables (`DEPARTMENTS` has all 12). OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
 
 Then run auto classification and the profiler as in items 4 and 6, with the same schema filter. In the Profiler agent, also turn on **Include Views**: item 12 needs the views profiled.
 
@@ -163,13 +168,13 @@ Add a Lineage agent on the Agents tab, with the same schema filter, and run it. 
 
 ### 12. Explain why `V_MONTHLY_PAYROLL` disagrees
 
-Compare the view with the table it reads. Open `EMPLOYEES` and then `v_monthly_payroll`, go to Column Profile and look at `emp_id`: the table has 100 values after the baseline, the view about 90. (A view's Table Profile shows no row count, so use a column's Values Count.)
+Compare the view with the table it reads. Open `EMPLOYEES` and then `v_monthly_payroll`, go to Column Profile and look at `emp_id`: the table has 100 values after the baseline, the view 91. (A view's Table Profile shows no row count, so use a column's Values Count.)
 
 To see why, open the lineage from item 11 and click the edge between a table and the view: it shows the view's SQL (literal values appear as `?`), which ends in `WHERE e.STATUS = ?`. The value is `'A'`, so terminated staff drop out, and so does any row with a bad status. The view isn't broken; it quietly answers a different question than the raw tables do, which is why a report's totals need checking against their sources.
 
 ### 13. Test the baseline: everything green
 
-Create the 12 tests in [the Oracle test table](reference.md#oracle-tests-and-the-defects-they-catch), using the lowercase column names the UI shows. Create a Bundle Suite named `dqlab_oracle_suite` with all 12 and an On Demand pipeline, and run it. On the clean baseline all 12 are green.
+Create the 12 tests in [the Oracle test table](reference.md#oracle-tests-and-the-defects-they-catch), using the lowercase column names the UI shows. Create a Bundle Suite named `dqlab_oracle_suite` with all 12 and an On Demand pipeline, and run it. On the clean baseline **you should see** all 12 green.
 
 Shortcut: [run the four `pipelines/oracle/dq_tests_*.yaml` files](reference.md#pipelines-from-yaml) to create the test cases, then build the Bundle Suite in the UI.
 
@@ -201,7 +206,7 @@ It deletes the bad rows (for a duplicate, the higher id), plus the history, sala
 - **Auto classification fails with `CERTIFICATE_VERIFY_FAILED` for raw.githubusercontent.com**: this happens when Enable Auto Classification (PII tagging) is on. It downloads a spaCy language model (`en_core_web_md`) from GitHub the first time it runs, and networks that inspect TLS (corporate proxies) break that download. Turn it back off; sample data is still stored.
 - **Profiler run succeeds but there are no profiles ("Processed records: 0, Filtered: 3")**: AutoPilot's Profiler agent has a classification filter limited to `Tier1`/`Tier2`, which none of the lab's tables match. Delete the filter entries, as described in item 6.
 - **Lineage agent shows Failed**: expected. It needs query history (`mysql.general_log`), which the lab's user can't read. The lab doesn't use lineage, so delete the Lineage and Usage agents.
-- **Two Profiler or two AutoClassification agents**: you added your own and AutoPilot added its copy an hour later. Keep one of each, configured as in items 4 and 6, and delete the other.
+- **Two Profiler or two AutoClassification agents**: you added your own and AutoPilot added its copy. Keep one of each, configured as in items 4 and 6, and delete the other.
 - **Can't connect to MySQL from the service wizard**: use `source-mysql:3306`, not `localhost`.
 - **Oracle connection test fails, or ingestion lists thousands of `sys` tables**: see the Oracle entries in the [README troubleshooting](../README.md#troubleshooting). Both come down to the dictionary grant (`seed.py --target oracle --init`) and the `(?i)^dqlab$` schema filter.
 - **An Oracle test run fails with `StopIteration`**: the test's column name must be lowercase, as the UI shows it. Delete the test case and create it again.

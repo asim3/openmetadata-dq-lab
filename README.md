@@ -77,10 +77,10 @@ Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigg
    pip install -r seed/requirements.txt
    ```
 
-4. Seed a clean baseline, a week of data with no bad rows:
+4. Seed a clean baseline, a week of data with no bad rows. `--seed 1` makes the numbers identical on every machine, so the learning path can quote them (200 products, 500 customers, 1382 orders):
 
    ```sh
-   python seed/seed.py --init --bad-rate 0 --days 7
+   python seed/seed.py --init --bad-rate 0 --days 7 --seed 1
    ```
 
 5. Hand over to the participants: [docs/learning-path.md](docs/learning-path.md).
@@ -93,7 +93,7 @@ To start again with fresh source tables, leaving OpenMetadata as it is:
 docker compose rm --stop --force source-mysql
 docker volume rm dqlab_source-mysql-data
 docker compose up -d --wait source-mysql
-python seed/seed.py --init --bad-rate 0 --days 7
+python seed/seed.py --init --bad-rate 0 --days 7 --seed 1
 ```
 
 For Oracle, do the same with `source-oracle` and the volume `dqlab_source-oracle-data` (add `--profile oracle` to the compose commands).
@@ -141,7 +141,7 @@ The whole learning path, items 1 to 14, was walked through as a participant woul
 | `fix_defects.py` (both sources) | after it, every test is green again |
 | Oracle views | 5 tables and 2 views ingested; lineage from each view to its tables; `V_MONTHLY_PAYROLL` has about 90 rows against 100 employees |
 
-Not covered, because the API walk doesn't exercise them: how the UI looks and its exact labels; the agents AutoPilot adds about an hour after Create & Deploy; and PII auto-classification (off on purpose). Report anything in the UI that differs from the learning path.
+Not covered, because the API walk doesn't exercise them: how the UI looks and its exact labels; the timing of the agents AutoPilot adds after Create & Deploy in the UI (a manual API trigger created them within minutes); and PII auto-classification (off on purpose). Report anything in the UI that differs from the learning path.
 
 ## Pinned OpenMetadata version
 
@@ -168,7 +168,7 @@ An Oracle 21c XE source with legacy HR/payroll data, two views and lineage. It's
 3. Seed a clean baseline (run `pip install -r seed/requirements.txt` again if you set up before Phase 2):
 
    ```sh
-   python seed/seed.py --target oracle --init --bad-rate 0 --days 7
+   python seed/seed.py --target oracle --init --bad-rate 0 --days 7 --seed 1
    ```
 
    `--init` creates the tables and views, and lets the lab user read Oracle's data dictionary, which OpenMetadata's Oracle connector requires.

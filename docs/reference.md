@@ -158,13 +158,23 @@ Things that go wrong:
 
 AutoPilot is an OpenMetadata application that creates and runs agents for a new service, so a user doesn't have to add them one by one. In the UI, Create & Deploy in the add-service wizard starts it, and there is nothing to press.
 
-- It runs the Metadata agent at once.
-- About an hour later it adds Usage, Profiler and Auto Classification agents (provider `automation`, weekly schedule).
-- Its Profiler only profiles tables classified `Tier1` or `Tier2`, so it profiles nothing in the lab. Its Auto Classification has PII tagging on, which needs a GitHub download that a TLS-inspecting network blocks. Edit both, as in the [learning path](learning-path.md#3-run-metadata-ingestion).
+- It runs the Metadata agent at once, and creates Lineage, Usage, Profiler and Auto Classification agents (provider `automation`, weekly schedule). In a test that triggered it by hand through the API, all five existed within a few minutes. An earlier UI run saw some of them only after about an hour, so allow up to an hour and look at the Agents tab before adding your own.
+- **Only Metadata runs.** The other agents wait for their weekly slot (Sunday: Metadata 00:00, Lineage and Usage 02:00, Profiler and Auto Classification 04:00), so each one needs a click on Run.
+- Its defaults, as observed:
+
+  | Agent | Defaults | Result in the lab |
+  |---|---|---|
+  | Metadata | Include Views and Include Tags on | works |
+  | Lineage | query and view lineage on | fails: `SELECT command denied ... mysql.general_log` |
+  | Usage | | "succeeds", finds nothing |
+  | Profiler | classification filter `Tier1`, `Tier2`; Include Views off | profiles nothing |
+  | Auto Classification | **PII tagging on**, **Store Sample Data off**, confidence 80 | PII needs a GitHub download that a TLS-inspecting network blocks; no sample data |
+
+- Edit the last two as in the [learning path](learning-path.md#3-run-metadata-ingestion), and delete Lineage and Usage.
 - **Creating a service through the API or from YAML does not start it.** Only the agents you create exist.
 - Don't click Trigger AutoPilot after you've deleted agents: it recreates them.
 
-Checked by running the whole learning path through the API, except AutoPilot's hour-later agents: those, and what AutoPilot adds for an Oracle service, are not checked yet.
+Checked by running the whole learning path through the API, and by triggering AutoPilot by hand on a MySQL test service. Not checked yet: AutoPilot started from the UI wizard (timing), and what it adds for an Oracle service.
 
 ## Pipelines from YAML
 
