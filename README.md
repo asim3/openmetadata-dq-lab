@@ -78,6 +78,7 @@ Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigg
 
 1. Seed a clean baseline with `--init --bad-rate 0 --days 7`, then catalog, profile and test it: every test is green.
 2. Seed "Monday's batch" with `python seed/seed.py --bad-rate 0.15`, re-run the profiler and the tests, and triage the red flags.
+3. Work the incidents: find the cause, fix the source rows, re-run the tests until they're green, and resolve the incidents ([item 9](#9-investigate-fix-and-resolve)).
 
 The seeder prints what it injected, and which test should catch each defect, so trainees can check their triage against it.
 
@@ -136,11 +137,33 @@ Shortcut: [run the three `dq_tests_*.yaml` files](#pipelines-from-yaml) to creat
 python seed/seed.py --bad-rate 0.15
 ```
 
-Re-run the Profiler agent (row counts grow) and the Bundle Suite pipeline. Tests go red, and each failed test opens an incident in the Incident Manager: acknowledge, assign and resolve them there.
+Re-run the Profiler agent (row counts grow) and the Bundle Suite pipeline. Tests go red, and each failed test opens an incident in the Incident Manager.
 
 Compare every red test with the seeder's summary:
 - A defect type with 0 rows leaves its test green. The products table only gets about 20 new rows per run, so it may not see every defect.
 - Failed-row counts match the summary. The exception is uniqueness tests, which count both copies of each duplicate.
+
+### 9. Investigate, fix and resolve
+
+Red tests are the start of a process, not the end of one. This is the workflow a data team follows, and the order matters:
+
+1. **Triage.** Open each failed test (Data Quality > Test Cases, or the Incident Manager). Read the failed-row count and look at the failed rows. Compare with the seeder's summary: the counts should match, except that uniqueness tests count both copies of a duplicate.
+2. **Own the incident.** Acknowledge the incident, assign it to someone and set a severity. From now on there is a named owner and a record of what happened.
+3. **Find the root cause.** Ask where the bad rows came from before touching them. In a real company the cause is usually an upstream application bug, a faulty load job or a schema change, and the table's owner and lineage tell you who to talk to. In this lab the cause is the seeder's bad batch.
+4. **Fix at the source.** Correct the rows, or move them out, in the source database, and fix whatever produced them. Cleaning up the symptom only brings the same defects back on the next load. Run the `SELECT` to see the rows, then the fix. These are lab examples; in production a fix like this goes through a ticket and a reviewed script, not an ad hoc statement:
+
+   ```sql
+   -- orders with a status that isn't allowed
+   SELECT order_id, status FROM dqlab.orders
+   WHERE status NOT IN ('pending', 'shipped', 'delivered', 'cancelled');
+
+   -- orders with a non-positive amount or quantity
+   DELETE FROM dqlab.orders WHERE amount <= 0 OR quantity <= 0;
+   ```
+
+5. **Re-run and resolve.** Re-run the Bundle Suite pipeline (re-run the Profiler too if you changed row counts) and confirm the tests are green again. Then resolve each incident with a note on the cause and the fix. The history stays in OpenMetadata as an audit trail.
+
+To start over instead of fixing rows one by one, follow [Resetting](#resetting): that restores the clean baseline in the source database.
 
 ## Tests and the defects they catch
 
@@ -245,7 +268,6 @@ To reset everything:
 
 ```sh
 docker compose down -v
-rm -rf openmetadata/docker-volume    # PowerShell: Remove-Item -Recurse -Force openmetadata/docker-volume
 ```
 
 `down -v` removes the named volumes: source data, Elasticsearch and Airflow. OpenMetadata's own MySQL data is a bind mount under `openmetadata/docker-volume/`, so delete that folder too, or OpenMetadata will come back with its old catalog.
