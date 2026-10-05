@@ -37,11 +37,14 @@ services:
     image: gvenzl/oracle-xe:21-slim-faststart
     profiles: [oracle]
     restart: unless-stopped
+    # The SOURCE_ORACLE_* values default to empty, not "required": Compose checks required
+    # variables even for services behind an inactive profile, and Phase 1 must start
+    # with an older .env that doesn't have them. Oracle itself refuses to start without them.
     environment:
-      ORACLE_PASSWORD: ${SOURCE_ORACLE_SYSTEM_PASSWORD:?copy .env.example to .env}
+      ORACLE_PASSWORD: ${SOURCE_ORACLE_SYSTEM_PASSWORD:-}
       # Creates the app user (and its schema) in the XEPDB1 pluggable database.
-      APP_USER: ${SOURCE_ORACLE_USER:?copy .env.example to .env}
-      APP_USER_PASSWORD: ${SOURCE_ORACLE_PASSWORD:?copy .env.example to .env}
+      APP_USER: ${SOURCE_ORACLE_USER:-}
+      APP_USER_PASSWORD: ${SOURCE_ORACLE_PASSWORD:-}
     ports:
       - "${SOURCE_ORACLE_PORT:-1521}:1521"
     volumes:
