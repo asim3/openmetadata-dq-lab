@@ -223,7 +223,7 @@ Connection from OpenMetadata: `source-oracle:1521`, service name `XEPDB1`, views
 Split by audience:
 
 - `README.md` (developer setup): purpose, architecture sketch, prerequisites, quickstart, resetting, infrastructure troubleshooting (Oracle startup time, memory, networking), the pinned version, and the Phase 2 add-on.
-- `docs/learning-path.md` (students): the class flow, the step-by-step learning path, and UI troubleshooting.
+- `docs/learning-path.md` (participants): the class flow, the step-by-step learning path, and UI troubleshooting.
 - `docs/reference.md`: the tests and the defects they catch, why the sources have no constraints, the seeder reference, and the YAML pipelines.
 - `CLAUDE.md`: repo rules and conventions for Claude Code.
 
