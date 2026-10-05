@@ -44,6 +44,7 @@ def main(argv: list[str] | None = None) -> int:
     load_dotenv(REPO_ROOT / ".env")
     seed = args.seed if args.seed is not None else random.randrange(1_000_000)
     try:
+        preflight(args.target)
         if args.target in ("mysql", "all"):
             seed_mysql(args, seed)
         if args.target in ("oracle", "all"):
@@ -110,6 +111,18 @@ def load_dotenv(path: Path) -> None:
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "'\"":
             value = value[1:-1]
         os.environ.setdefault(key, value)
+
+
+def preflight(target: str) -> None:
+    """Connect to every targeted database before changing any of them.
+
+    With --target all, a database that is down must stop the run before the other one is
+    touched, so a failed run leaves nothing half-seeded.
+    """
+    if target in ("mysql", "all"):
+        connect_mysql(int(os.environ.get("SOURCE_MYSQL_PORT", "3307"))).close()
+    if target in ("oracle", "all"):
+        connect_oracle(int(os.environ.get("SOURCE_ORACLE_PORT", "1521"))).close()
 
 
 def seed_mysql(args: argparse.Namespace, seed: int) -> None:

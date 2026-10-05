@@ -79,7 +79,6 @@ Create the 13 tests in [the test table](reference.md#tests-and-the-defects-they-
 
 Then go to Data Quality > Test Suites and create a Bundle Suite named `dqlab_mysql_suite`. A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Add all 13 test cases, add a pipeline with an On Demand schedule, and run it. **You should see** all 13 tests pass.
 
-
 ## 8. Seed a bad batch and triage
 
 ```sh
@@ -163,7 +162,7 @@ Then run auto classification and the profiler as in items 4 and 6, with the same
 
 ### 11. Explore view lineage
 
-Add a Lineage agent on the Agents tab, with the same schema filter, and run it. It reads each view's SQL and links the view to the tables it selects from. Open `v_current_employees` and `v_monthly_payroll` and click Lineage. The first reads `EMPLOYEES` and `JOB_HISTORY`; the second reads `EMPLOYEES`, `SALARIES` and `ALLOWANCES`.
+Use the Lineage agent on the service's Agents tab (AutoPilot creates one; add one yourself if it isn't there), give it the same schema filter, and run it. Unlike MySQL, it works here. It reads each view's SQL and links the view to the tables it selects from. Open `v_current_employees` and `v_monthly_payroll` and click Lineage. The first reads `EMPLOYEES` and `JOB_HISTORY`; the second reads `EMPLOYEES`, `SALARIES` and `ALLOWANCES`.
 
 ### 12. Explain why `V_MONTHLY_PAYROLL` disagrees
 
@@ -174,7 +173,6 @@ To see why, open the lineage from item 11 and click the edge between a table and
 ### 13. Test the baseline: everything green
 
 Create the 12 tests in [the Oracle test table](reference.md#oracle-tests-and-the-defects-they-catch), using the lowercase column names the UI shows. Create a Bundle Suite named `dqlab_oracle_suite` with all 12 and an On Demand pipeline, and run it. On the clean baseline **you should see** all 12 green.
-
 
 ### 14. Hunt the legacy quirks, triage and fix
 
@@ -203,7 +201,7 @@ It deletes the bad rows (for a duplicate, the higher id), plus the history, sala
 
 - **Auto classification fails with `CERTIFICATE_VERIFY_FAILED` for raw.githubusercontent.com**: this happens when Enable Auto Classification (PII tagging) is on. It downloads a spaCy language model (`en_core_web_md`) from GitHub the first time it runs, and networks that inspect TLS (corporate proxies) break that download. Turn it back off; sample data is still stored.
 - **Profiler run succeeds but there are no profiles ("Processed records: 0, Filtered: 3")**: AutoPilot's Profiler agent has a classification filter limited to `Tier1`/`Tier2`, which none of the lab's tables match. Delete the filter entries, as described in item 6.
-- **Lineage agent shows Failed**: expected. It needs query history (`mysql.general_log`), which the lab's user can't read. The lab doesn't use lineage, so delete the Lineage and Usage agents.
+- **MySQL Lineage agent shows Failed**: expected. It needs query history (`mysql.general_log`), which the lab's user can't read. The lab doesn't use lineage on MySQL, so delete the Lineage and Usage agents there. (Oracle's Lineage agent works: it reads the views' SQL.)
 - **Two Profiler or two AutoClassification agents**: you added your own and AutoPilot added its copy. Keep one of each, configured as in items 4 and 6, and delete the other.
 - **Can't connect to MySQL from the service wizard**: use `source-mysql:3306`, not `localhost`.
 - **Oracle connection test fails, or ingestion lists thousands of `sys` tables**: see the Oracle entries in the [README troubleshooting](../README.md#troubleshooting). Both come down to the dictionary grant (`seed.py --target oracle --init`) and the `(?i)^dqlab$` schema filter.

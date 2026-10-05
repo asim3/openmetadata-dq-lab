@@ -206,10 +206,11 @@ Found while building M5: OpenMetadata's Oracle connector reads `DBA_TABLES`, so 
 
 ### Learning path
 
-9. Start Oracle, seed it, and add the service with views included.
-10. Explore view lineage from the views back to their base tables.
-11. Profile a view against its base tables and explain why `V_MONTHLY_PAYROLL` disagrees.
-12. Hunt the legacy quirks: text dates, bad status codes, drifted department names.
+10. Seed Oracle, add the service with views included and a schema filter, and profile the views too.
+11. Explore view lineage from the views back to their base tables.
+12. Compare a view with its base tables and explain why `V_MONTHLY_PAYROLL` disagrees.
+13. Create the 12 tests and run them on the clean baseline: everything green.
+14. Seed a bad batch, hunt the legacy quirks (text dates, bad status codes, drifted department names), triage and fix.
 
 ### Acceptance
 

@@ -121,7 +121,7 @@ The source tables have primary keys and nothing else: no foreign keys, `UNIQUE` 
 | Flag | Default | Purpose |
 |---|---|---|
 | `--target` | `mysql` | `mysql`, `oracle` or `all` |
-| `--init` | off | Create the tables first; safe to repeat |
+| `--init` | off | Create the tables (and, on Oracle, the views) first; safe to repeat. On Oracle it also lets the lab user read the data dictionary, which needs `SOURCE_ORACLE_SYSTEM_PASSWORD` in `.env`. |
 | `--customers` | 500 | New customers per run. Orders are about 3× this. Products get 200 rows on the first run, then 15–25 per run. |
 | `--employees` | 100 | Oracle: new employees per run. Each gets 1–3 `JOB_HISTORY`, 1–2 `SALARIES` and 1–3 `ALLOWANCES` rows. `DEPARTMENTS` (12 rows) is seeded once. |
 | `--bad-rate` | 0.10 | Share of each table's new rows that are bad |
@@ -129,11 +129,11 @@ The source tables have primary keys and nothing else: no foreign keys, `UNIQUE` 
 | `--seed` | random | RNG seed. The same seed on the same starting data gives the same batch. |
 
 - Each bad row gets exactly one defect, picked at random from its table's list, and each table gets `round(rows × bad-rate)` bad rows.
-- Timestamps come from the MySQL server's clock, so your machine's time zone doesn't matter.
+- Timestamps and dates come from the database server's clock (MySQL or Oracle), so your machine's time zone doesn't matter.
 - Clean rows stay clean across runs. Emails and SKUs embed the row id, and duplicates only copy values from rows with no other defect.
 - Every run prints rows inserted per table, bad rows per defect type, and the test that should catch each defect.
 
-`fix_defects.py` takes `--dry-run`, which counts the bad rows and changes nothing, and `--target mysql|oracle|all` (default `mysql`). On Oracle it also deletes the history, salary and allowance rows left without an employee when a bad employee row is removed.
+`fix_defects.py` takes `--dry-run`, which counts the bad rows and changes nothing, and `--target mysql|oracle|all` (default `mysql`). Both scripts check that every targeted database is reachable before they change anything. On Oracle it also deletes the history, salary and allowance rows left without an employee when a bad employee row is removed.
 
 ## Agents and AutoPilot
 

@@ -86,6 +86,7 @@ def main(argv: list[str] | None = None) -> int:
 
     seed.load_dotenv(seed.REPO_ROOT / ".env")
     try:
+        seed.preflight(args.target)
         if args.target in ("mysql", "all"):
             fix_mysql(args.dry_run)
         if args.target in ("oracle", "all"):

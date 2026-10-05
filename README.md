@@ -102,16 +102,16 @@ OpenMetadata keeps its catalog, profiles and test history for the `dqlab_mysql` 
 To reset everything:
 
 ```sh
-docker compose down -v
+docker compose --profile oracle down -v
 ```
 
-`down -v` removes all the named volumes: source data, OpenMetadata's MySQL, Elasticsearch and Airflow. Use plain `docker compose down` to stop the lab and keep your data.
+`down -v` removes all the named volumes: source data, OpenMetadata's MySQL, Elasticsearch and Airflow. Use `docker compose --profile oracle down` to stop the lab and keep your data. Keep `--profile oracle` even if you never used Oracle (it does no harm): without it, Compose leaves a running Oracle container and its volume behind.
 
 ## Troubleshooting
 
 - **`required variable SOURCE_MYSQL_ROOT_PASSWORD is missing a value`**: create `.env` from `.env.example`, in the repo root.
 - **`the attribute 'version' is obsolete`**: a warning about the official OpenMetadata compose file. It's harmless and the file stays unmodified.
-- **Port already in use**: something on your machine holds one of the ports listed under [Prerequisites](#prerequisites). Stop it, or for the source database only, change `SOURCE_MYSQL_PORT` in `.env`.
+- **Port already in use**: something on your machine holds one of the ports listed under [Prerequisites](#prerequisites). Stop it, or for a source database only, change `SOURCE_MYSQL_PORT` or `SOURCE_ORACLE_PORT` in `.env`.
 - **Memory**: containers restarting, or Elasticsearch exiting with code 137, means Docker is short of memory. Give Docker 8 GB.
 - **OpenMetadata not up yet**: the first start runs database migrations; give it a few minutes. `docker compose ps` should show `execute_migrate_all` exited (0) and `openmetadata_server` healthy.
 - **`openmetadata_mysql` unhealthy and restarting**: older checkouts bind-mounted its data from `openmetadata/docker-volume/db-data`, and InnoDB on a case-insensitive Windows mount can crash with an assertion in the purge thread. Pull the current `main`, which uses a named volume, and delete that folder.
@@ -138,7 +138,7 @@ The whole learning path, items 1 to 14, was walked through as a participant woul
 | Bad batch (`--bad-rate 0.15`) | every failed-row count equals the seeder's summary (uniqueness tests count both copies); a defect with 0 rows leaves its test green |
 | Incidents | one per failed test; they don't close when the test turns green, so each is resolved by hand |
 | `fix_defects.py` (both sources) | after it, every test is green again |
-| Oracle views | 5 tables and 2 views ingested; lineage from each view to its tables; `V_MONTHLY_PAYROLL` has about 90 rows against 100 employees |
+| Oracle views | 5 tables and 2 views ingested; lineage from each view to its tables; `V_MONTHLY_PAYROLL` has 91 rows against 100 employees |
 
 Not covered, because the API walk doesn't exercise them: how the UI looks and its exact labels; the timing of the agents AutoPilot adds after Create & Deploy in the UI (a manual API trigger created them within minutes); and PII auto-classification (off on purpose). Report anything in the UI that differs from the learning path.
 

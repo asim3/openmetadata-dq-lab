@@ -4,7 +4,7 @@ Guidance for Claude Code working in this repo. Human-facing docs are in [README.
 
 ## What this is
 
-A local, testing-only lab for teaching OpenMetadata's catalog and data-quality features. `seed/seed.py` fills a source MySQL with fake data, a share of it deliberately bad. OpenMetadata 2.0.2 catalogs, profiles and tests it. `seed/fix_defects.py` removes the bad rows again. Phase 1 (MySQL) and Phase 2 (Oracle, opt-in under the `oracle` compose profile) are both built (M1 to M5).
+A local, testing-only lab for teaching OpenMetadata's catalog and data-quality features. `seed/seed.py` fills the source databases (MySQL, and Oracle behind a compose profile) with fake data, a share of it deliberately bad. OpenMetadata 2.0.2 catalogs, profiles and tests it. `seed/fix_defects.py` removes the bad rows again. Phase 1 (MySQL) and Phase 2 (Oracle, opt-in under the `oracle` compose profile) are both built (M1 to M5).
 
 ## Layout
 
@@ -18,7 +18,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 - If something in PLAN.md doesn't work in practice, stop and ask; once a change is agreed, update PLAN.md to match.
 - **Real credentials go only in `.env`.** Never commit it or put secrets in docs.
 - **Git:** there is no `gh` CLI and no PRs. Commit, then push straight to `main` when asked. End commit messages with the Co-Authored-By line from the session's attribution instructions.
-- **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in the test table in `docs/reference.md`, and `fix_defects.py`. The same goes for `oracle_generators.py`.
+- **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in the test tables in `docs/reference.md`, and `fix_defects.py`. The same goes for `oracle_generators.py`.
 - Keep the test names in `docs/reference.md`, the generators' `DEFECTS` and the OpenMetadata test cases identical (MySQL: 13 tests, suite `dqlab_mysql_suite`; Oracle: 12 tests, suite `dqlab_oracle_suite`).
 
 ## Documentation conventions
@@ -31,16 +31,15 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 ## Working with the running stack
 
 - UIs: OpenMetadata http://localhost:8585 (`admin@open-metadata.org` / `admin`), Airflow http://localhost:8080 (`admin` / `admin`).
-- Source MySQL is on `127.0.0.1:3307` from the host and `source-mysql:3306` inside Docker.
+- Source MySQL is on `127.0.0.1:3307` from the host and `source-mysql:3306` inside Docker. Source Oracle (profile `oracle`) is on `127.0.0.1:1521`, service `XEPDB1`, and `source-oracle:1521` inside Docker.
 - To inspect OpenMetadata state, log in to the REST API at `http://localhost:8585/api/v1` (`POST /users/login`, password base64-encoded) and read services, ingestion pipelines and test cases.
 - A MySQL prompt in the source container: `docker compose exec source-mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" dqlab'`.
-- `docker compose down` keeps data; `down -v` wipes every named volume, OpenMetadata's MySQL included. Ask before wiping.
+- `docker compose down` keeps data; `down -v` wipes every named volume, OpenMetadata's MySQL included. Ask before wiping. Always add `--profile oracle` to `down`: without it Compose leaves the Oracle container running and keeps its volume.
 
 ## Environment gotchas
 
 - There is no pipeline YAML in this repo, on purpose: it's not supported and the user doesn't want to maintain it. Services, agents and tests are created in the UI (or, for verification, the REST API). Agents are ingestion pipelines; see "Agents and AutoPilot" in docs/reference.md.
 - Oracle: OpenMetadata's connector needs dictionary access (`seed.py --target oracle --init` grants `SELECT ANY DICTIONARY`), which exposes `SYS`, so every Oracle pipeline needs the schema filter `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names (table `dqlab.EMPLOYEES` has column `emp_id`), so test cases need lowercase column names. A test case created wrongly is reused with `forceUpdate: false`: delete it first.
-
 - The user's network inspects TLS (Cisco Umbrella). Containers can't download from GitHub at runtime (`CERTIFICATE_VERIFY_FAILED`), which is why PII auto-classification stays off. On the Windows host use `curl --ssl-no-revoke` and `git -c http.schannelCheckRevoke=false` when a download fails. Expect the same problem for anything Oracle-related that downloads from GitHub.
 - Windows: OpenMetadata's MySQL data must stay on a named volume. A bind mount on the case-insensitive Windows filesystem crashed InnoDB.
 - Git Bash turns `/tmp/...` into a Windows path; prefix `docker` commands with `MSYS_NO_PATHCONV=1` or use PowerShell.
