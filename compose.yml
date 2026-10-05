@@ -8,5 +8,7 @@
 name: dqlab
 
 include:
-  - openmetadata/docker-compose.yml
+  - path:
+      - openmetadata/docker-compose.yml
+      - openmetadata/docker-compose.override.yml
   - sources/docker-compose.yml

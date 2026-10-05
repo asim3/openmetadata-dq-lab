@@ -1,0 +1,10 @@
+# Lab override: keep OpenMetadata's MySQL data in a named Docker volume.
+# The release file bind-mounts ./docker-volume/db-data, and InnoDB on a
+# case-insensitive Windows mount crashed (assertion in the purge thread).
+volumes:
+  om-mysql-data:
+
+services:
+  mysql:
+    volumes:
+      - om-mysql-data:/var/lib/mysql
