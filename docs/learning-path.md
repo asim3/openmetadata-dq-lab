@@ -97,7 +97,7 @@ Compare every red test with the seeder's summary:
 Red tests are the start of a process, not the end of one. This is the workflow a data team follows, and the order matters:
 
 1. **Triage.** Open each failed test (Data Quality > Test Cases, or the Incident Manager). Read the failed-row count and look at the failed rows. Compare with the seeder's summary: the counts should match, except that uniqueness tests count both copies of a duplicate.
-2. **Own the incident.** Acknowledge the incident, assign it to someone and set a severity. From now on there is a named owner and a record of what happened.
+2. **Own the incident.** Acknowledge the incident, assign it to someone and set a severity. From now on there is a named owner and a record of what happened. If the table has an owner, new incidents on it are assigned to that owner automatically.
 3. **Find the root cause.** Ask where the bad rows came from before touching them. In a real company the cause is usually an upstream application bug, a faulty load job or a schema change, and the table's owner and lineage tell you who to talk to. In this lab the cause is the seeder's bad batch.
 4. **Fix at the source.** Correct the rows, or move them out, in the source database, and fix whatever produced them. Cleaning up the symptom only brings the same defects back on the next load. In the lab, the owners' fix is a script that removes every bad row the seeder can inject:
 
@@ -155,7 +155,7 @@ Test the connection, then on What to Ingest set:
 
 Click Create & Deploy. As in item 3, AutoPilot adds agents later: give each one you keep the same schema filter and an On Demand schedule, and delete the Usage agent. You should see five tables and two views under `dqlab_oracle > default > dqlab`. OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
 
-Then run auto classification and the profiler as in items 4 and 6, with the same schema filter. Only the tables are profiled.
+Then run auto classification and the profiler as in items 4 and 6, with the same schema filter. In the Profiler agent, also turn on **Include Views**: item 12 needs the views profiled.
 
 ### 11. Explore view lineage
 
@@ -163,25 +163,29 @@ Add a Lineage agent on the Agents tab, with the same schema filter, and run it. 
 
 ### 12. Explain why `V_MONTHLY_PAYROLL` disagrees
 
-Compare the view's row count with the raw table's: after the baseline `EMPLOYEES` has 100 rows and the view about 90. Open the view's definition and find `WHERE e.STATUS = 'A'`. Terminated staff drop out, and so does any row with a bad status. The view isn't broken; it quietly answers a different question than the raw tables do, which is why a report's totals need checking against their sources.
+Compare the view with the table it reads. Open `EMPLOYEES` and then `v_monthly_payroll`, go to Column Profile and look at `emp_id`: the table has 100 values after the baseline, the view about 90. (A view's Table Profile shows no row count, so use a column's Values Count.)
 
-### 13. Hunt the legacy quirks
+To see why, open the lineage from item 11 and click the edge between a table and the view: it shows the view's SQL (literal values appear as `?`), which ends in `WHERE e.STATUS = ?`. The value is `'A'`, so terminated staff drop out, and so does any row with a bad status. The view isn't broken; it quietly answers a different question than the raw tables do, which is why a report's totals need checking against their sources.
 
-Seed a bad batch and look for the three quirks:
+### 13. Test the baseline: everything green
+
+Create the 12 tests in [the Oracle test table](reference.md#oracle-tests-and-the-defects-they-catch), using the lowercase column names the UI shows. Create a Bundle Suite named `dqlab_oracle_suite` with all 12 and an On Demand pipeline, and run it. On the clean baseline all 12 are green.
+
+Shortcut: [run the four `pipelines/oracle/dq_tests_*.yaml` files](reference.md#pipelines-from-yaml) to create the test cases, then build the Bundle Suite in the UI.
+
+### 14. Hunt the legacy quirks, triage and fix
+
+Seed a bad batch, then re-run the Profiler agent and the suite:
 
 ```sh
 python seed/seed.py --target oracle --bad-rate 0.15
 ```
 
-- **Text dates:** `HIRE_DATE` is a `VARCHAR2`. Its column profile has no date min/max. Find the rows in a format other than `YYYY-MM-DD`.
-- **Status codes:** `STATUS` is `CHAR(1)`. Check its value distribution for `a`, a blank or junk.
-- **Drifted names:** `EMPLOYEES.DEPT_NAME` duplicates `DEPARTMENTS.DEPT_NAME`. Find the rows where they disagree.
+Tests go red and raise incidents, with failed-row counts matching the seeder's summary (uniqueness counts both copies). A defect type with 0 rows in the summary leaves its test green; with only 100 employees per run that can happen to the drifted-name defect, which is only one of six for `EMPLOYEES`. Look for the three quirks:
 
-### 14. Test, triage and fix
-
-Create the 12 tests in [the Oracle test table](reference.md#oracle-tests-and-the-defects-they-catch), using the lowercase column names the UI shows. Create a Bundle Suite named `dqlab_oracle_suite` with all 12 and an On Demand pipeline. On the clean baseline all 12 are green.
-
-After the bad batch from item 13, re-run the Profiler agent and the suite. Every test goes red, and the failed-row counts match the seeder's summary (uniqueness counts both copies). Shortcut: [run the four `pipelines/oracle/dq_tests_*.yaml` files](reference.md#pipelines-from-yaml) to create the test cases, then build the Bundle Suite in the UI.
+- **Text dates:** `HIRE_DATE` is a `VARCHAR2`. Its column profile has no date min/max; its Min and Max are string lengths, and a bad format makes them differ from 10. `employees_hire_date_format` lists the rows.
+- **Status codes:** `STATUS` is `CHAR(1)`. Its Distinct Count in the column profile should be 2 (`A`, `T`) and is higher once bad codes (`a`, a blank, junk) arrive.
+- **Drifted names:** `EMPLOYEES.DEPT_NAME` duplicates `DEPARTMENTS.DEPT_NAME`. The profile can't show this; only `employees_dept_name_matches_master` can, and its failed rows list the mismatches.
 
 Work the incidents as in item 9. The owners' fix is:
 
@@ -190,7 +194,7 @@ python seed/fix_defects.py --target oracle --dry-run
 python seed/fix_defects.py --target oracle
 ```
 
-It deletes the bad rows (for a duplicate, the higher id), plus the history, salary and allowance rows left without an employee, so those tables shrink by more than the dry run shows. Re-run the profiler and the suite: all 12 are green.
+It deletes the bad rows (for a duplicate, the higher id), plus the history, salary and allowance rows left without an employee, so those tables shrink by more than the dry run shows. Re-run the profiler and the suite: all 12 are green. Incidents stay open until you resolve them.
 
 ## Troubleshooting
 

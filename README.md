@@ -127,6 +127,22 @@ docker compose down -v
 
 Problems inside the OpenMetadata UI (auto classification, the profiler, lineage) are covered in [docs/learning-path.md](docs/learning-path.md#troubleshooting).
 
+## Verification
+
+The whole learning path, items 1 to 14, was walked through as a participant would on a freshly wiped lab (all volumes removed, `docker compose --profile oracle up -d`, both baselines seeded). Every step was done through OpenMetadata's REST API and the bundled Airflow, not through the YAML files in `pipelines/`: the services, the Metadata, Lineage, Auto Classification and Profiler agents, the 13 MySQL and 12 Oracle tests, both Bundle Suites and their pipelines, and the incidents.
+
+| Check | Result |
+|---|---|
+| Sample data | 50 rows per table after auto classification |
+| Profiler row counts | match the seeder's totals on both sources, and grow after a bad batch |
+| Clean baseline | all 13 MySQL tests and all 12 Oracle tests are green |
+| Bad batch (`--bad-rate 0.15`) | every failed-row count equals the seeder's summary (uniqueness tests count both copies); a defect with 0 rows leaves its test green |
+| Incidents | one per failed test; they don't close when the test turns green, so each is resolved by hand |
+| `fix_defects.py` (both sources) | after it, every test is green again |
+| Oracle views | 5 tables and 2 views ingested; lineage from each view to its tables; `V_MONTHLY_PAYROLL` has about 90 rows against 100 employees |
+
+Not covered, because the API walk doesn't exercise them: how the UI looks and its exact labels; the agents AutoPilot adds about an hour after Create & Deploy; and PII auto-classification (off on purpose). Report anything in the UI that differs from the learning path.
+
 ## Pinned OpenMetadata version
 
 `openmetadata/docker-compose.yml` is the official `docker-compose.yml` from the OpenMetadata **2.0.2** release (`2.0.2-release`), unmodified. It runs OpenMetadata server 2.0.2, Elasticsearch 9.3.0, and the ingestion image with Airflow 3.3.1.
@@ -159,4 +175,4 @@ An Oracle 21c XE source with legacy HR/payroll data, two views and lineage. It's
 
 4. Hand over to the participants: [learning path, items 10 to 14](docs/learning-path.md#phase-2-the-oracle-legacy-hr-source).
 
-The Oracle pipelines were verified by running the YAML in `pipelines/oracle/` and reading the results through the REST API. The UI steps in the learning path use the same settings.
+How this was checked is in [Verification](#verification).
