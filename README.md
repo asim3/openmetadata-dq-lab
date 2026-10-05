@@ -150,7 +150,22 @@ Red tests are the start of a process, not the end of one. This is the workflow a
 1. **Triage.** Open each failed test (Data Quality > Test Cases, or the Incident Manager). Read the failed-row count and look at the failed rows. Compare with the seeder's summary: the counts should match, except that uniqueness tests count both copies of a duplicate.
 2. **Own the incident.** Acknowledge the incident, assign it to someone and set a severity. From now on there is a named owner and a record of what happened.
 3. **Find the root cause.** Ask where the bad rows came from before touching them. In a real company the cause is usually an upstream application bug, a faulty load job or a schema change, and the table's owner and lineage tell you who to talk to. In this lab the cause is the seeder's bad batch.
-4. **Fix at the source.** Correct the rows, or move them out, in the source database, and fix whatever produced them. Cleaning up the symptom only brings the same defects back on the next load. Run the `SELECT` to see the rows, then the fix. These are lab examples; in production a fix like this goes through a ticket and a reviewed script, not an ad hoc statement:
+4. **Fix at the source.** Correct the rows, or move them out, in the source database, and fix whatever produced them. Cleaning up the symptom only brings the same defects back on the next load. In the lab, the owners' fix is a script that removes every bad row the seeder can inject:
+
+   ```sh
+   python seed/fix_defects.py --dry-run   # count what would be fixed, change nothing
+   python seed/fix_defects.py             # fix everything
+   ```
+
+   It deletes the bad rows, and for a duplicate the row with the higher id. Deleting a customer or product also deletes the orders that pointed at it, so the orders table can shrink by more than the dry run's orphan count shows. It's safe to repeat, and it refreshes the table statistics so the profiler's row counts are current.
+
+   To look at the rows and fix them yourself, open a MySQL prompt in the source container:
+
+   ```sh
+   docker compose exec source-mysql sh -c 'mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" dqlab'
+   ```
+
+   Then run statements such as these (lab examples; in production a fix goes through a ticket and a reviewed script, not an ad hoc statement). Type `exit` to leave.
 
    ```sql
    -- orders with a status that isn't allowed
@@ -214,7 +229,7 @@ The source tables have primary keys and nothing else: no foreign keys, `UNIQUE` 
 
 ## Seeder reference
 
-`seed/seed.py` appends to the source database; it never truncates or updates.
+`seed/seed.py` appends to the source database; it never truncates or updates. `seed/fix_defects.py` is its counterpart: it deletes the bad rows ([item 9](#9-investigate-fix-and-resolve)).
 
 | Flag | Default | Purpose |
 |---|---|---|
