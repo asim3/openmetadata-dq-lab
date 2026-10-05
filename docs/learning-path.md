@@ -153,7 +153,7 @@ Test the connection, then on What to Ingest set:
 - **Schema Filter Pattern, include:** `(?i)^dqlab$`. This is essential. The lab user can read Oracle's data dictionary, which also lists thousands of `SYS` tables, and without the filter ingestion tries to catalog them all.
 - **Include Views:** on.
 
-Click Create & Deploy. As in item 3, AutoPilot adds agents later: give each one you keep the same schema filter and an On Demand schedule, and delete the Usage agent. You should see five tables and two views under `dqlab_oracle > default > dqlab`. OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
+Click Create & Deploy. As in item 3, AutoPilot adds agents about an hour later (for Oracle, expect the same set as for MySQL, and check the Agents tab): give each one you keep the same schema filter and an On Demand schedule, and delete the Usage agent. [Agents and AutoPilot](reference.md#agents-and-autopilot) explains each agent. You should see five tables and two views under `dqlab_oracle > default > dqlab`. OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
 
 Then run auto classification and the profiler as in items 4 and 6, with the same schema filter. In the Profiler agent, also turn on **Include Views**: item 12 needs the views profiled.
 

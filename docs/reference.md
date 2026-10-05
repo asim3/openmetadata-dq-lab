@@ -135,9 +135,40 @@ The source tables have primary keys and nothing else: no foreign keys, `UNIQUE` 
 
 `fix_defects.py` takes `--dry-run`, which counts the bad rows and changes nothing, and `--target mysql|oracle|all` (default `mysql`). On Oracle it also deletes the history, salary and allowance rows left without an employee when a bad employee row is removed.
 
+## Agents and AutoPilot
+
+An **agent** is OpenMetadata's name for an ingestion pipeline: a saved job that connects to a service and does one kind of work. Deploying an agent creates an Airflow DAG in the ingestion container, and running it triggers that DAG. The lab schedules nothing, so every agent runs On Demand, from the Run button.
+
+| Agent | What it does in the lab | Settings that matter |
+|---|---|---|
+| Metadata | Catalogs tables and columns (and views, on Oracle). Run it first. | Oracle: schema filter `(?i)^dqlab$`, Include Views on |
+| Auto Classification | Stores 50 sample rows per table. In 2.x it's the only agent that does. | Store Sample Data on; Enable Auto Classification (PII) off |
+| Profiler | Row counts and column statistics | Oracle: same schema filter; Include Views on to profile the views. A view gets column statistics but no table row count. |
+| Lineage | Links each Oracle view to the tables it selects from. The edge keeps the view's SQL, with literals shown as `?`. | Oracle only: same schema filter |
+| Bundle Suite pipeline | Runs the tests of a Bundle Suite. It runs existing test cases and doesn't create any. | |
+
+Things that go wrong:
+
+- **Oracle without the schema filter** tries to catalog all of `SYS`, because the lab user can read the data dictionary. Every Oracle agent needs the filter.
+- **A test case created wrongly is reused**, not recreated, so it keeps failing until you delete it. On Oracle that usually means a column name that isn't lowercase.
+- **The ingestion bot's token changes** whenever OpenMetadata's data is wiped. YAML runs then fail with "The given token does not match the current bot's token" until you copy the new token into `.env`.
+- **Two agents of one type** appear when you add your own and AutoPilot adds its copy later.
+
+### AutoPilot
+
+AutoPilot is an OpenMetadata application that creates and runs agents for a new service, so a user doesn't have to add them one by one. In the UI, Create & Deploy in the add-service wizard starts it, and there is nothing to press.
+
+- It runs the Metadata agent at once.
+- About an hour later it adds Usage, Profiler and Auto Classification agents (provider `automation`, weekly schedule).
+- Its Profiler only profiles tables classified `Tier1` or `Tier2`, so it profiles nothing in the lab. Its Auto Classification has PII tagging on, which needs a GitHub download that a TLS-inspecting network blocks. Edit both, as in the [learning path](learning-path.md#3-run-metadata-ingestion).
+- **Creating a service through the API or from YAML does not start it.** Only the agents you create exist.
+- Don't click Trigger AutoPilot after you've deleted agents: it recreates them.
+
+Checked by running the whole learning path through the API, except AutoPilot's hour-later agents: those, and what AutoPilot adds for an Oracle service, are not checked yet.
+
 ## Pipelines from YAML
 
-`pipelines/mysql/` and `pipelines/oracle/` mirror the UI pipelines, for reference or when the UI isn't an option. The files contain `${...}` placeholders only; values come from your `.env`. To run them you need the ingestion bot's token: in OpenMetadata go to Settings > Bots > ingestion-bot, copy the token, and set `DQLAB_INGESTION_BOT_JWT` in `.env`.
+`pipelines/mysql/` and `pipelines/oracle/` mirror the UI pipelines, for reference or when the UI isn't an option. The files contain `${...}` placeholders only; values come from your `.env`. To run them you need the ingestion bot's token: in OpenMetadata go to Settings > Bots > ingestion-bot, copy the token, and set `DQLAB_INGESTION_BOT_JWT` in `.env`. The token changes if OpenMetadata's data is wiped, so copy it again then.
 
 Copy the files into the ingestion container (repeat after any edit), then run them there:
 

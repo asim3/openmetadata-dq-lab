@@ -39,6 +39,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 
 ## Environment gotchas
 
+- The ingestion-bot JWT in `.env` changes whenever OpenMetadata's data is wiped; fetch the new one (Settings > Bots, or `GET /users/auth-mechanism/<bot user id>`). Agents are ingestion pipelines; see "Agents and AutoPilot" in docs/reference.md.
 - Oracle: OpenMetadata's connector needs dictionary access (`seed.py --target oracle --init` grants `SELECT ANY DICTIONARY`), which exposes `SYS`, so every Oracle pipeline needs the schema filter `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names (table `dqlab.EMPLOYEES` has column `emp_id`), so test cases need lowercase column names. A test case created wrongly is reused with `forceUpdate: false`: delete it first. View lineage needs source type `oracle-lineage`.
 
 - The user's network inspects TLS (Cisco Umbrella). Containers can't download from GitHub at runtime (`CERTIFICATE_VERIFY_FAILED`), which is why PII auto-classification stays off. On the Windows host use `curl --ssl-no-revoke` and `git -c http.schannelCheckRevoke=false` when a download fails. Expect the same problem for anything Oracle-related that downloads from GitHub.
