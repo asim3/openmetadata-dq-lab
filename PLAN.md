@@ -162,7 +162,9 @@ Row counts: OpenMetadata reads MySQL row counts from `information_schema.TABLES`
 
 ### Schema (app-user schema in `XEPDB1`)
 
-Uppercase identifiers, Oracle-native types.
+Uppercase identifiers, Oracle-native types. The seeder assigns primary keys itself (`MAX + 1`), as Oracle XE needs no sequences here. Oracle stores `''` as NULL, so a "blank" `STATUS` is a single space.
+
+`--days` on Oracle: the tables have no load timestamp, so it spreads the effective dates of each new employee's latest raise and allowances over the last N days. Hire dates are 1 to 12 years back.
 
 | Table | Columns |
 |---|---|

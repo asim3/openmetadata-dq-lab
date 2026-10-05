@@ -4,7 +4,7 @@ Guidance for Claude Code working in this repo. Human-facing docs are in [README.
 
 ## What this is
 
-A local, testing-only lab for teaching OpenMetadata's catalog and data-quality features. `seed/seed.py` fills a source MySQL with fake data, a share of it deliberately bad. OpenMetadata 2.0.2 catalogs, profiles and tests it. `seed/fix_defects.py` removes the bad rows again. Phase 1 (MySQL) is built; Phase 2 (Oracle) is not started.
+A local, testing-only lab for teaching OpenMetadata's catalog and data-quality features. `seed/seed.py` fills a source MySQL with fake data, a share of it deliberately bad. OpenMetadata 2.0.2 catalogs, profiles and tests it. `seed/fix_defects.py` removes the bad rows again. Phase 1 (MySQL) is built. Phase 2 (Oracle) is in progress: M4 is built (compose service, `oracle_schema.py`, `oracle_generators.py`, `seed.py --target oracle`); M5 (YAML pipelines, docs, `fix_defects.py` for Oracle) is not.
 
 ## Layout
 
@@ -16,7 +16,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 ## Rules
 
 - **Never edit `openmetadata/docker-compose.yml`.** It is the upstream 2.0.2 release file, checksummed in the README. Lab changes go in `openmetadata/docker-compose.override.yml`.
-- **Don't start Phase 2** (Oracle, milestones M4 and M5 in PLAN.md) without the user's explicit go-ahead. If something in PLAN.md doesn't work in practice, stop and ask; once a change is agreed, update PLAN.md to match.
+- Phase 2 was started on the user's go-ahead (2026-10-05, M4). Do M5 only when asked. If something in PLAN.md doesn't work in practice, stop and ask; once a change is agreed, update PLAN.md to match.
 - **Real credentials go only in `.env`.** Never commit it or put secrets in docs or YAML.
 - **Git:** there is no `gh` CLI and no PRs. Commit, then push straight to `main` when asked. End commit messages with the Co-Authored-By line from the session's attribution instructions.
 - **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in `pipelines/mysql/dq_tests_*.yaml`, the test table in `docs/reference.md`, and `fix_defects.py`.

@@ -1,3 +1,4 @@
 # Seeder dependencies. Faker is pinned so a given --seed reproduces the same data.
 Faker==40.40.0
 PyMySQL[rsa]==1.2.3
+oracledb==26.0.1
