@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-Guidance for Claude Code working in this repo. Human-facing docs are in [README.md](README.md) (setup), [docs/learning-path.md](docs/learning-path.md) (participants) and [docs/reference.md](docs/reference.md) (tests, seeder, YAML pipelines). The design and build order are in [PLAN.md](PLAN.md).
+Guidance for Claude Code working in this repo. Human-facing docs are in [README.md](README.md) (setup), [docs/learning-path.md](docs/learning-path.md) (participants) and [docs/reference.md](docs/reference.md) (tests, seeder, agents). The design and build order are in [PLAN.md](PLAN.md).
 
 ## What this is
 
@@ -10,22 +10,21 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 
 - `compose.yml`: includes `openmetadata/docker-compose.yml` (official, pinned) merged with `openmetadata/docker-compose.override.yml`, plus `sources/docker-compose.yml`.
 - `seed/`: `seed.py` (append bad and clean rows), `fix_defects.py` (delete the bad rows), `mysql_generators.py` and `oracle_generators.py` (defects and the test that catches each), `mysql_schema.py`, `oracle_schema.py`.
-- `pipelines/mysql/` and `pipelines/oracle/`: only `dq_tests_*.yaml`, an optional shortcut that creates the test cases. Services and agents are set up in the UI.
-- `.env` (git-ignored, holds real credentials and the ingestion-bot JWT) and `.env.example` (placeholders only).
+- `.env` (git-ignored, holds real credentials) and `.env.example` (placeholders only).
 
 ## Rules
 
 - **Never edit `openmetadata/docker-compose.yml`.** It is the upstream 2.0.2 release file, checksummed in the README. Lab changes go in `openmetadata/docker-compose.override.yml`.
 - If something in PLAN.md doesn't work in practice, stop and ask; once a change is agreed, update PLAN.md to match.
-- **Real credentials go only in `.env`.** Never commit it or put secrets in docs or YAML.
+- **Real credentials go only in `.env`.** Never commit it or put secrets in docs.
 - **Git:** there is no `gh` CLI and no PRs. Commit, then push straight to `main` when asked. End commit messages with the Co-Authored-By line from the session's attribution instructions.
-- **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in `pipelines/<source>/dq_tests_*.yaml`, the test table in `docs/reference.md`, and `fix_defects.py`. The same goes for `oracle_generators.py`.
-- Keep the YAML test names, the README test table and the OpenMetadata test cases identical (MySQL: 13 tests, suite `dqlab_mysql_suite`; Oracle: 12 tests, suite `dqlab_oracle_suite`).
+- **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in the test table in `docs/reference.md`, and `fix_defects.py`. The same goes for `oracle_generators.py`.
+- Keep the test names in `docs/reference.md`, the generators' `DEFECTS` and the OpenMetadata test cases identical (MySQL: 13 tests, suite `dqlab_mysql_suite`; Oracle: 12 tests, suite `dqlab_oracle_suite`).
 
 ## Documentation conventions
 
 - Write for participants: plain, short, one idea per step, and keep the three audiences apart (setup in the README, walkthrough in `docs/learning-path.md`, lookups in `docs/reference.md`).
-- **AutoPilot is real and automatic.** Create & Deploy in the add-service wizard makes the browser call `apps/trigger/AutoPilotApplication` (nothing to press). It runs the Metadata agent at once and creates Lineage, Usage, Profiler and AutoClassification agents (provider `automation`, weekly; only Metadata runs, the rest wait for Sunday). A manual API trigger created all five within minutes; an earlier UI run saw them after about an hour, which is unresolved. Its Profiler is limited to `Tier1`/`Tier2` and its AutoClassification has PII tagging on, so both need editing. Creating the service through the API or YAML does not trigger it (tested). Don't check agent lists in the first hour and conclude they don't exist.
+- **AutoPilot is real and automatic.** Create & Deploy in the add-service wizard makes the browser call `apps/trigger/AutoPilotApplication` (nothing to press). It runs the Metadata agent at once and creates Lineage, Usage, Profiler and AutoClassification agents (provider `automation`, weekly; only Metadata runs, the rest wait for Sunday). A manual API trigger created all five within minutes; an earlier UI run saw them after about an hour, which is unresolved. Its Profiler is limited to `Tier1`/`Tier2` and its AutoClassification has PII tagging on, so both need editing. Creating the service through the API does not trigger it (tested). Don't check agent lists in the first hour and conclude they don't exist.
 - Describe the UI as it is in OpenMetadata 2.0.2 (for example, a logical test suite is a "Bundle Suite", and the service wizard has no Save button).
 - The user does the UI checks. When a doc change depends on what the UI shows, verify it through the API where you can, and say plainly what you couldn't see.
 
@@ -39,7 +38,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 
 ## Environment gotchas
 
-- The ingestion-bot JWT in `.env` changes whenever OpenMetadata's data is wiped; fetch the new one (Settings > Bots, or `GET /users/auth-mechanism/<bot user id>`). Agents are ingestion pipelines; see "Agents and AutoPilot" in docs/reference.md.
+- There is no pipeline YAML in this repo, on purpose: it's not supported and the user doesn't want to maintain it. Services, agents and tests are created in the UI (or, for verification, the REST API). Agents are ingestion pipelines; see "Agents and AutoPilot" in docs/reference.md.
 - Oracle: OpenMetadata's connector needs dictionary access (`seed.py --target oracle --init` grants `SELECT ANY DICTIONARY`), which exposes `SYS`, so every Oracle pipeline needs the schema filter `(?i)^dqlab$`. OpenMetadata lowercases the schema, column and view names (table `dqlab.EMPLOYEES` has column `emp_id`), so test cases need lowercase column names. A test case created wrongly is reused with `forceUpdate: false`: delete it first.
 
 - The user's network inspects TLS (Cisco Umbrella). Containers can't download from GitHub at runtime (`CERTIFICATE_VERIFY_FAILED`), which is why PII auto-classification stays off. On the Windows host use `curl --ssl-no-revoke` and `git -c http.schannelCheckRevoke=false` when a download fails. Expect the same problem for anything Oracle-related that downloads from GitHub.

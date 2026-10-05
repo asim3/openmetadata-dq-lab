@@ -15,7 +15,7 @@ Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigg
 |---|---|
 | Setting up the lab | This file |
 | A participant | [docs/learning-path.md](docs/learning-path.md) |
-| Looking up the tests, seeder flags, agents or the optional test YAML | [docs/reference.md](docs/reference.md) |
+| Looking up the tests, seeder flags or agents | [docs/reference.md](docs/reference.md) |
 | Claude Code working on the repo | [CLAUDE.md](CLAUDE.md) |
 
 ## How it fits together
@@ -38,7 +38,6 @@ Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigg
 - `source-mysql` is separate from OpenMetadata's internal MySQL: its own service, host port (3307) and volume. It joins OpenMetadata's network, so OpenMetadata reaches it as `source-mysql:3306`.
 - `seed/seed.py` runs on your machine and appends data through `127.0.0.1:3307`. `seed/fix_defects.py` removes the bad rows again.
 - `source-oracle` (Phase 2) follows the same pattern: its own service, host port (1521) and volume, started only with `--profile oracle`. OpenMetadata reaches it as `source-oracle:1521`, service name `XEPDB1`.
-- `pipelines/mysql/` and `pipelines/oracle/` hold `dq_tests_*.yaml` files, an optional shortcut that creates the test cases. Everything else is set up in the UI.
 
 ## Prerequisites
 
@@ -129,7 +128,7 @@ Problems inside the OpenMetadata UI (auto classification, the profiler, lineage)
 
 ## Verification
 
-The whole learning path, items 1 to 14, was walked through as a participant would on a freshly wiped lab (all volumes removed, `docker compose --profile oracle up -d`, both baselines seeded). Every step was done through OpenMetadata's REST API and the bundled Airflow, not through the YAML files in `pipelines/`: the services, the Metadata, Lineage, Auto Classification and Profiler agents, the 13 MySQL and 12 Oracle tests, both Bundle Suites and their pipelines, and the incidents.
+The whole learning path, items 1 to 14, was walked through as a participant would on a freshly wiped lab (all volumes removed, `docker compose --profile oracle up -d`, both baselines seeded). Every step was done through OpenMetadata's REST API and the bundled Airflow: the services, the Metadata, Lineage, Auto Classification and Profiler agents, the 13 MySQL and 12 Oracle tests, both Bundle Suites and their pipelines, and the incidents.
 
 | Check | Result |
 |---|---|

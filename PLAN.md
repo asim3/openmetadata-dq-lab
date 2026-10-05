@@ -51,9 +51,6 @@ openmetadata-dq-lab/
 │   ├── oracle_schema.py           # HR DDL + views
 │   ├── oracle_generators.py       # clean + bad records + legacy quirks
 │   └── requirements.txt
-├── pipelines/                     # optional test-case YAML (dq_tests_<table>.yaml)
-│   ├── mysql/                     # dq_tests_{customers,products,orders}.yaml
-│   └── oracle/                    # one dq_tests_<table>.yaml per tested table
 ├── .env.example
 ├── README.md                      # developer setup
 ├── docs/                          # learning-path.md (participants), reference.md
@@ -103,7 +100,7 @@ Configured in the UI, deployed to the bundled Airflow with no schedule:
 4. Profiler
 5. A logical test suite containing every test listed for that source (the tests span several tables)
 
-`pipelines/<source>/` holds only the test-case YAML, an optional shortcut run from the ingestion container with `metadata test -c`. (The service, Metadata, Profiler and other agent YAML was dropped once the whole path was verified through the API: the UI is the supported path.) Tests get one `dq_tests_<table>.yaml` per table: YAML can only create test cases in a single-table run, and a logical-suite run only executes tests that already exist. Test case names match the README, so tests created in the UI and from YAML don't duplicate. Env placeholders only; no secrets.
+There is no pipeline YAML: it would be advanced, unsupported material to maintain. Services, agents, tests and the Bundle Suite are all created in the UI. A logical test suite only runs test cases that already exist, so create the tests first. Test case names are listed in `docs/reference.md`.
 
 ## 3. Phase 1 — MySQL e-commerce
 
@@ -227,7 +224,7 @@ Split by audience:
 
 - `README.md` (developer setup): purpose, architecture sketch, prerequisites, quickstart, resetting, infrastructure troubleshooting (Oracle startup time, memory, networking), the pinned version, and the Phase 2 add-on.
 - `docs/learning-path.md` (participants): the class flow, the step-by-step learning path, and UI troubleshooting.
-- `docs/reference.md`: the tests and the defects they catch, why the sources have no constraints, the seeder reference, and the YAML pipelines.
+- `docs/reference.md`: the tests and the defects they catch, why the sources have no constraints, the seeder reference, and the agents.
 - `CLAUDE.md`: repo rules and conventions for Claude Code.
 
 ## 6. Build order
@@ -236,6 +233,6 @@ Split by audience:
 |---|---|---|
 | M1 | Repo skeleton, root and sources compose (MySQL only), `.env.example` | Acceptance 1 |
 | M2 | Seeder core, MySQL schema and generators | Acceptance 2 |
-| M3 | MySQL pipeline YAML, README Phase 1 | Acceptance 3–5; **checkpoint: Phase 1 usable** |
+| M3 | MySQL learning path, README Phase 1 | Acceptance 3–5; **checkpoint: Phase 1 usable** |
 | M4 | Oracle service under the `oracle` profile, schema, views, generators | Acceptance 6–7 |
-| M5 | Oracle pipeline YAML, README Phase 2 | Acceptance 8–9 |
+| M5 | Oracle learning path, README Phase 2 | Acceptance 8–9 |

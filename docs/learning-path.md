@@ -27,7 +27,7 @@ Settings > Services > Databases > Add New Service > MySQL. This opens a three-st
 
 | Field (Connect step) | Value |
 |---|---|
-| Service name | `dqlab_mysql`. The test names and the optional test YAML assume this name. |
+| Service name | `dqlab_mysql`. The test names assume this name. |
 | Username / Password | `SOURCE_MYSQL_USER` / `SOURCE_MYSQL_PASSWORD` from `.env`. The password is under Authentication > Basic Auth. |
 | Host and Port | `source-mysql:3306`. OpenMetadata runs inside Docker, so not `localhost:3307`. |
 | Database Schema | `dqlab` (under Scope & Options). Leave Database Name and Query History Table empty. |
@@ -79,7 +79,6 @@ Create the 13 tests in [the test table](reference.md#tests-and-the-defects-they-
 
 Then go to Data Quality > Test Suites and create a Bundle Suite named `dqlab_mysql_suite`. A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Add all 13 test cases, add a pipeline with an On Demand schedule, and run it. **You should see** all 13 tests pass.
 
-Shortcut: [run the three `dq_tests_*.yaml` files](reference.md#test-cases-from-yaml-optional) to create the test cases (this needs the ingestion bot's token in `.env`), then build the Bundle Suite in the UI. The test names match, so nothing is duplicated.
 
 ## 8. Seed a bad batch and triage
 
@@ -148,7 +147,7 @@ Then Settings > Services > Databases > Add New Service > Oracle.
 
 | Field | Value |
 |---|---|
-| Service name | `dqlab_oracle`. The test names and the optional test YAML assume this name. |
+| Service name | `dqlab_oracle`. The test names assume this name. |
 | Username / Password | `SOURCE_ORACLE_USER` / `SOURCE_ORACLE_PASSWORD` from `.env` |
 | Host and Port | `source-oracle:1521`, not `localhost` |
 | Oracle Connection Type | Oracle Service Name: `XEPDB1` |
@@ -176,7 +175,6 @@ To see why, open the lineage from item 11 and click the edge between a table and
 
 Create the 12 tests in [the Oracle test table](reference.md#oracle-tests-and-the-defects-they-catch), using the lowercase column names the UI shows. Create a Bundle Suite named `dqlab_oracle_suite` with all 12 and an On Demand pipeline, and run it. On the clean baseline **you should see** all 12 green.
 
-Shortcut: [run the four `pipelines/oracle/dq_tests_*.yaml` files](reference.md#test-cases-from-yaml-optional) to create the test cases, then build the Bundle Suite in the UI.
 
 ### 14. Hunt the legacy quirks, triage and fix
 

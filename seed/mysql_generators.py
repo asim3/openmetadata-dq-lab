@@ -24,7 +24,7 @@ from random import Random
 
 from faker import Faker
 
-# Rules the OpenMetadata tests check; pipelines/mysql/dq_tests_*.yaml use the
+# Rules the OpenMetadata tests check; the test tables in docs/reference.md use the
 # same values.
 EMAIL_REGEX = r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,}$"
 COUNTRIES = {"SA": 40, "AE": 15, "KW": 8, "EG": 8, "QA": 6, "BH": 5, "OM": 5, "JO": 5, "GB": 4, "US": 4}

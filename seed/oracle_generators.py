@@ -28,7 +28,7 @@ from faker import Faker
 
 from mysql_generators import Batch
 
-# Rules the OpenMetadata tests check; pipelines/oracle/dq_tests_*.yaml use the
+# Rules the OpenMetadata tests check; the test tables in docs/reference.md use the
 # same values.
 HIRE_DATE_REGEX = r"^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
 STATUSES = {"A": 90, "T": 10}
