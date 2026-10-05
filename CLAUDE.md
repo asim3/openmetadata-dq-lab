@@ -25,7 +25,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 ## Documentation conventions
 
 - Write for participants: plain, short, one idea per step, and keep the three audiences apart (setup in the README, walkthrough in `docs/learning-path.md`, lookups in `docs/reference.md`).
-- **Don't mention AutoPilot in the docs, and never trigger it.** In the lab's real flow, Create & Deploy creates only the Metadata agent; participants add the AutoClassification and Profiler agents themselves.
+- **AutoPilot is real and automatic.** Create & Deploy in the add-service wizard makes the browser call `apps/trigger/AutoPilotApplication` (nothing to press). It runs the Metadata agent at once, and about an hour later adds the Usage, Profiler and AutoClassification agents (provider `automation`, weekly). Its Profiler is limited to `Tier1`/`Tier2` and its AutoClassification has PII tagging on, so both need editing. Creating the service through the API or YAML does not trigger it (tested). Don't check agent lists within the first hour and conclude they don't exist.
 - Describe the UI as it is in OpenMetadata 2.0.2 (for example, a logical test suite is a "Bundle Suite", and the service wizard has no Save button).
 - The user does the UI checks. When a doc change depends on what the UI shows, verify it through the API where you can, and say plainly what you couldn't see.
 
