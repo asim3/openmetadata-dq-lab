@@ -1,24 +1,24 @@
 # Reference
 
-Lookup material for the lab: the tests and the defects they catch, the seeder, and the agents. For the walkthrough, see the [learning path](learning-path.md).
+Lookup material for the lab: the tests and the defects they catch, the seeder, the agents, and the map from OpenMetadata to the NDI domains. For the walkthrough, see the [learning path](learning-path.md).
 
 ## Tests and the defects they catch
 
-| Test name | Column | Test type (UI) | Parameters | Catches |
-|---|---|---|---|---|
-| `customers_full_name_not_null` | customers.full_name | Column Values To Be Not Null | | null `full_name` |
-| `customers_email_unique` | customers.email | Column Values To Be Unique | | duplicate `email` |
-| `customers_email_format` | customers.email | Column Values To Match Regex Pattern | RegEx Pattern: `^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,}$` | malformed `email` |
-| `customers_age_between_18_and_90` | customers.age | Column Values To Be Between | Min 18, Max 90 | `age` outside 18–90 |
-| `customers_country_allowed` | customers.country | Column Values To Be In Set | Allowed Values: `SA` `AE` `KW` `EG` `QA` `BH` `OM` `JO` `GB` `US`; Match enum: on | `country` not in the list |
-| `products_sku_unique` | products.sku | Column Values To Be Unique | | duplicate `sku` |
-| `products_unit_price_min_1` | products.unit_price | Column Values To Be Between | Min 1 | `unit_price` ≤ 0 |
-| `products_category_not_null` | products.category | Column Values To Be Not Null | | null `category` |
-| `orders_no_orphans` | orders (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | orphan `customer_id` or `product_id` |
-| `orders_amount_min_1` | orders.amount | Column Values To Be Between | Min 1 | `amount` ≤ 0 |
-| `orders_quantity_min_1` | orders.quantity | Column Values To Be Between | Min 1 | `quantity` ≤ 0 |
-| `orders_status_allowed` | orders.status | Column Values To Be In Set | Allowed Values: `pending` `shipped` `delivered` `cancelled`; Match enum: on | `status` not in the set |
-| `orders_no_future_dates` | orders (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | future `order_date` |
+| Test name | Column | Test type (UI) | Parameters | Catches | NDI dimension |
+|---|---|---|---|---|---|
+| `customers_full_name_not_null` | customers.full_name | Column Values To Be Not Null | | null `full_name` | Completeness |
+| `customers_email_unique` | customers.email | Column Values To Be Unique | | duplicate `email` | Uniqueness |
+| `customers_email_format` | customers.email | Column Values To Match Regex Pattern | RegEx Pattern: `^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+[.][A-Za-z]{2,}$` | malformed `email` | Validity |
+| `customers_age_between_18_and_90` | customers.age | Column Values To Be Between | Min 18, Max 90 | `age` outside 18–90 | Validity |
+| `customers_country_allowed` | customers.country | Column Values To Be In Set | Allowed Values: `SA` `AE` `KW` `EG` `QA` `BH` `OM` `JO` `GB` `US`; Match enum: on | `country` not in the list | Validity |
+| `products_sku_unique` | products.sku | Column Values To Be Unique | | duplicate `sku` | Uniqueness |
+| `products_unit_price_min_1` | products.unit_price | Column Values To Be Between | Min 1 | `unit_price` ≤ 0 | Validity |
+| `products_category_not_null` | products.category | Column Values To Be Not Null | | null `category` | Completeness |
+| `orders_no_orphans` | orders (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | orphan `customer_id` or `product_id` | Consistency |
+| `orders_amount_min_1` | orders.amount | Column Values To Be Between | Min 1 | `amount` ≤ 0 | Validity |
+| `orders_quantity_min_1` | orders.quantity | Column Values To Be Between | Min 1 | `quantity` ≤ 0 | Validity |
+| `orders_status_allowed` | orders.status | Column Values To Be In Set | Allowed Values: `pending` `shipped` `delivered` `cancelled`; Match enum: on | `status` not in the set | Validity |
+| `orders_no_future_dates` | orders (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | future `order_date` | Validity |
 
 `orders_no_orphans` SQL Expression:
 
@@ -36,6 +36,12 @@ WHERE c.customer_id IS NULL OR p.product_id IS NULL
 SELECT order_id, order_date FROM dqlab.orders WHERE order_date > NOW()
 ```
 
+### Quality dimensions
+
+NDI expects every quality rule to name its dimension: completeness, uniqueness, timeliness, validity, accuracy or consistency. The last column gives each test's dimension. OpenMetadata's own label differs in two places: it calls a range check (Between) *Accuracy*, and it leaves Custom SQL Query without a dimension. A range check is a validity check in NDI's terms (values must lie in the permitted range), and the SQL tests here compare data across tables or columns, so they're *Consistency*. Pick one reading and keep it.
+
+**Timeliness has no test in the lab.** OpenMetadata 2.0.2 has no dedicated freshness test; Table Row Inserted Count To Be Between is the closest.
+
 ### Reading the results
 
 - **Match enum matters.** Without it, Column Values To Be In Set passes as soon as one value is allowed. With it, every row must be allowed.
@@ -49,20 +55,20 @@ SELECT order_id, order_date FROM dqlab.orders WHERE order_date > NOW()
 
 Phase 2 uses the same ideas on the Oracle HR source. The 12 tests live in the Bundle Suite `dqlab_oracle_suite`. Column names in the test form are lowercase, as OpenMetadata shows them.
 
-| Test name | Column | Test type (UI) | Parameters | Catches |
-|---|---|---|---|---|
-| `employees_full_name_not_null` | EMPLOYEES.full_name | Column Values To Be Not Null | | null `FULL_NAME` |
-| `employees_staff_no_unique` | EMPLOYEES.staff_no | Column Values To Be Unique | | duplicate `STAFF_NO` |
-| `employees_hire_date_format` | EMPLOYEES.hire_date | Column Values To Match Regex Pattern | RegEx Pattern: `^[0-9]{4}-[0-9]{2}-[0-9]{2}$` | `HIRE_DATE` text not `YYYY-MM-DD` |
-| `employees_status_allowed` | EMPLOYEES.status | Column Values To Be In Set | Allowed Values: `A` `T`; Match enum: on | `STATUS` not `A` or `T` |
-| `employees_no_orphan_dept` | EMPLOYEES (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | orphan `DEPT_ID` |
-| `employees_dept_name_matches_master` | EMPLOYEES (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | `DEPT_NAME` drifted from `DEPARTMENTS` |
-| `job_history_end_after_start` | JOB_HISTORY (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | `END_DATE` before `START_DATE` |
-| `salaries_base_amount_between_1_and_100000` | SALARIES.base_amount | Column Values To Be Between | Min 1, Max 100000 | `BASE_AMOUNT` ≤ 0 or absurdly high |
-| `salaries_currency_sar` | SALARIES.currency | Column Values To Be In Set | Allowed Values: `SAR`; Match enum: on | `CURRENCY` other than SAR |
-| `salaries_no_orphan_emp` | SALARIES (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | orphan `EMP_ID` |
-| `allowances_type_allowed` | ALLOWANCES.alw_type | Column Values To Be In Set | Allowed Values: `HOUSING` `TRANSPORT` `OTHER`; Match enum: on | invalid `ALW_TYPE` |
-| `allowances_amount_min_0` | ALLOWANCES.amount | Column Values To Be Between | Min 0 | negative `AMOUNT` |
+| Test name | Column | Test type (UI) | Parameters | Catches | NDI dimension |
+|---|---|---|---|---|---|
+| `employees_full_name_not_null` | EMPLOYEES.full_name | Column Values To Be Not Null | | null `FULL_NAME` | Completeness |
+| `employees_staff_no_unique` | EMPLOYEES.staff_no | Column Values To Be Unique | | duplicate `STAFF_NO` | Uniqueness |
+| `employees_hire_date_format` | EMPLOYEES.hire_date | Column Values To Match Regex Pattern | RegEx Pattern: `^[0-9]{4}-[0-9]{2}-[0-9]{2}$` | `HIRE_DATE` text not `YYYY-MM-DD` | Validity |
+| `employees_status_allowed` | EMPLOYEES.status | Column Values To Be In Set | Allowed Values: `A` `T`; Match enum: on | `STATUS` not `A` or `T` | Validity |
+| `employees_no_orphan_dept` | EMPLOYEES (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | orphan `DEPT_ID` | Consistency |
+| `employees_dept_name_matches_master` | EMPLOYEES (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | `DEPT_NAME` drifted from `DEPARTMENTS` | Consistency |
+| `job_history_end_after_start` | JOB_HISTORY (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | `END_DATE` before `START_DATE` | Consistency |
+| `salaries_base_amount_between_1_and_100000` | SALARIES.base_amount | Column Values To Be Between | Min 1, Max 100000 | `BASE_AMOUNT` ≤ 0 or absurdly high | Validity |
+| `salaries_currency_sar` | SALARIES.currency | Column Values To Be In Set | Allowed Values: `SAR`; Match enum: on | `CURRENCY` other than SAR | Validity |
+| `salaries_no_orphan_emp` | SALARIES (table-level) | Custom SQL Query | SQL below; Strategy ROWS; Operator `<=`; Threshold 0 | orphan `EMP_ID` | Consistency |
+| `allowances_type_allowed` | ALLOWANCES.alw_type | Column Values To Be In Set | Allowed Values: `HOUSING` `TRANSPORT` `OTHER`; Match enum: on | invalid `ALW_TYPE` | Validity |
+| `allowances_amount_min_0` | ALLOWANCES.amount | Column Values To Be Between | Min 0 | negative `AMOUNT` | Validity |
 
 SQL Expressions (the connection user owns the tables, so there's no schema prefix):
 
@@ -161,16 +167,132 @@ AutoPilot is an OpenMetadata application that creates and runs agents for a new 
 - **Only Metadata runs.** The other agents wait for their weekly slot (Sunday: Metadata 00:00, Lineage and Usage 02:00, Profiler and Auto Classification 04:00), so each one needs a click on Run.
 - Its defaults, as observed:
 
-  | Agent | Defaults | Result in the lab |
-  |---|---|---|
-  | Metadata | Include Views and Include Tags on | works |
-  | Lineage | query and view lineage on | fails: `SELECT command denied ... mysql.general_log` |
-  | Usage | | "succeeds", finds nothing |
-  | Profiler | classification filter `Tier1`, `Tier2`; Include Views off | profiles nothing |
-  | Auto Classification | **PII tagging on**, **Store Sample Data off**, confidence 80 | PII needs a GitHub download that a TLS-inspecting network blocks; no sample data |
+ | Agent | Defaults | Result in the lab |
+ |---|---|---|
+ | Metadata | Include Views and Include Tags on | works |
+ | Lineage | query and view lineage on | fails: `SELECT command denied ... mysql.general_log` |
+ | Usage | | "succeeds", finds nothing |
+ | Profiler | classification filter `Tier1`, `Tier2`; Include Views off | profiles nothing |
+ | Auto Classification | **PII tagging on**, **Store Sample Data off**, confidence 80 | PII needs a GitHub download that a TLS-inspecting network blocks; no sample data |
 
 - Edit the last two as in the [learning path](learning-path.md#3-run-metadata-ingestion), and delete Lineage and Usage.
 - **Creating a service through the API does not start it.** Only the agents you create exist.
 - Don't click Trigger AutoPilot after you've deleted agents: it recreates them.
 
 Checked by running the whole learning path through the API, and by triggering AutoPilot by hand on a MySQL test service. Not checked yet: AutoPilot started from the UI wizard (timing), and what it adds for an Oracle service.
+
+## NDI evidence map
+
+What OpenMetadata can show for each of the 42 maturity questions of the National Data Index (NDI), SDAIA's index of data management in government entities. The questions, levels and evidence names come from SDAIA's *National Data Index* document (v1.1, Appendices I and II) and its *Operational Excellence* handbook. Both are in this folder and on https://sdaia.gov.sa/en/Research/Pages/NationalDataIndex.aspx. Codes such as `MCM.5.1` are specification numbers from those documents.
+
+### How the levels work
+
+Each question is scored from Level 0 to Level 5, and the evidence is cumulative: a level needs the acceptance evidence of every level below it.
+
+| Level | Name | What it means | Evidence in practice |
+|---|---|---|---|
+| 0 | Absence of Capabilities | No practices. | None. |
+| 1 | Establishing | Basic practices, not standardised. | A report of what is done today. |
+| 2 | Defined | Practices are developed and formalised. | An approved plan, policy or process. |
+| 3 | Activated | Processes, scalable tools and early automation are in place. | The tool in use: records, logs and screenshots. |
+| 4 | Managed | Centralised governance, with KPIs and metrics. | A monitoring report built on predefined KPIs. |
+| 5 | Pioneer | Continuous improvement and innovation. | A continuous-improvement report: reviews, results and the improvements made. |
+
+OpenMetadata mostly gives you the Level 3 evidence, the numbers for Level 4, and the before-and-after for Level 5. Levels 1 and 2 are documents.
+
+**Yes** (6): OpenMetadata produces most of the evidence. **Partly** (14): it shows part, the rest is a document or decision. **No** (22): a policy, plan or process outside the tool. "Course" is the item in the [learning path](learning-path.md); `G` items are the governance items.
+
+| Question | What it asks | OpenMetadata | What to show | Course |
+|---|---|---|---|---|
+| DG.MQ.1 | Data management and personal data protection strategy and plan, with KPIs | No | Nothing in the tool. | - |
+| DG.MQ.2 | Policies, standards and guidelines for all domains | No | Nothing in the tool. | - |
+| DG.MQ.3 | Roles of the data management organisation | Partly | Teams, owners, domains and Data Steward roles show who does what. The appointment decisions are paper. | G1 |
+| DG.MQ.4 | Change management: awareness, communication, change control, capability | Partly | Announcements, tasks and the activity feed as communication evidence. | G5 |
+| MCM.MQ.1 | Plan to integrate and manage metadata | Partly | A catalog export as the report of documented metadata; the metadata structure (fields, custom properties, tags, glossary; `MCM.4.3`); Insights coverage as the implementation report. The plan is a document. | 5, G2, G4, G6 |
+| MCM.MQ.2 | Metadata management and data catalog tool | Yes | The tool and its version (Settings > About); services as the prioritised data sources (`MCM.1.2`); the tool in use (`MCM.5.1`); roles and policies for access (`MCM.2.1`, `MCM.2.2`); adoption and use, such as active users and page views (`MCM.3.2`, `MCM.6.1`); the audit log (`MCM.5.3`); the version report (`MCM.5.4`); scheduled agents as automated metadata capture (Level 5). The training plan is a document. | 2, 3, G1, G6 |
+| MCM.MQ.3 | Formal metadata processes (prioritising, populating, access, quality issues) | Yes | Governance workflows and tasks, such as glossary approval and tag, tier and owner updates; notification alerts and change logs (`MCM.5.2`); announcements as communication to users; owners and domains as the stewardship coverage model (`MCM.4.1`); annotation and certification (`MCM.4.6`, `MCM.4.7`); coverage KPIs (`MCM.6.2`). The process descriptions are documents. | G1, G2, G4, G5, G6 |
+| DQ.MQ.1 | Data quality plan | Partly | Owners and stewards on tests and suites show the assigned roles and resources. The plan and roadmap are documents. | 7 |
+| DQ.MQ.2 | Practices to manage and improve data quality | Yes | Rules with owner, description, dimension and threshold (`DQ.2.1`); the Tier priority list (`DQ.1.1`); profiling and test runs as the initial and periodic assessment (`DQ.1.3`); the incident workflow with root cause and resolution status (`DQ.2.3`); OpenMetadata as the tool automating the issue workflow (`DQ.2.5`); issues resolved against reported, and thresholds monitored (`DQ.3.2`). SLAs (`DQ.2.4`) are a document. | 6, 7, 8, 9, 13, 14, G4 |
+| DQ.MQ.3 | Monitor and report data quality status | Yes | Quality dashboard and test suites as scorecards (`DQ.2.2`); rules and results registered as catalog metadata (`DQ.4.3`); users report issues through tasks and incidents (`DQ.4.2`); incident log and remediation (`DQ.4.1`); trends over time (`DQ.3.1`). | 7, 8, 9 |
+| DQ.MQ.4 | Quality standards, dataset definitions, publish to the National Data Catalog | Partly | Descriptions, glossary terms and rules give the list of definitions and standards. Uploading them to the National Data Catalog is manual. | 5, 7, G2 |
+| DO.MQ.1 | Plan for data operations, storage and retention | No | Nothing in the tool. | - |
+| DO.MQ.2 | Standard operating procedures for database operations | No | Nothing in the tool. | - |
+| DO.MQ.3 | Business continuity: backup, disaster recovery | No | Nothing in the tool. | - |
+| DCM.MQ.1 | Document and content management and digitisation plan | No | Nothing in the tool. | - |
+| DCM.MQ.2 | Document and content policies: backup, retention, access approval | No | Nothing in the tool. | - |
+| DCM.MQ.3 | A document and content management tool | No | Nothing in the tool. | - |
+| DAM.MQ.1 | Plan to improve data architecture capabilities | No | Nothing in the tool. | - |
+| DAM.MQ.2 | Architecture and modelling practices: data flows, data models | Partly | Lineage records data flows and supports impact analysis; table and column schemas as the physical model; the glossary linked to columns. Conceptual models and policy are documents. | 11, 12, G2 |
+| DSI.MQ.1 | Data sharing and integration plan | Partly | The services as the inventory of systems and data stores; lineage; schemas. The plan is a document. | 2, 10, 11 |
+| DSI.MQ.2 | Processes for sharing data inside and with other entities | Partly | A data contract records what a producer promises its consumers (owner, schema, quality tests), as input to an internal sharing agreement. The agreements and the requests themselves are not OpenMetadata. | G5 |
+| DSI.MQ.3 | Data integration architecture across stores, systems and applications | Partly | Lineage as the source-to-target flow. Requirements, solution designs and test scripts are documents. | 11, 12 |
+| DSI.MQ.4 | Controls and processes for sharing and transforming data | No | Nothing in the tool. | - |
+| RMD.MQ.1 | Reference and master data plan | No | Nothing in the tool. | - |
+| RMD.MQ.2 | Processes managing reference and master data from creation to archival | Partly | Tags identify and classify reference and master data; tasks and version history as a change log. The lifecycle process is a document. | G4 |
+| RMD.MQ.3 | A data hub as the trusted source | No | OpenMetadata is a catalog, not a master data hub (matching, merging, golden records, synchronisation). | - |
+| BIA.MQ.1 | Business intelligence and analytics plan | No | Nothing in the tool. | - |
+| BIA.MQ.2 | BI use cases and an implementation plan | No | Nothing in the tool. | - |
+| BIA.MQ.3 | Management and governance of BI processes | No | OpenMetadata can catalog dashboards and charts from a BI tool, but the lab has no BI source. | - |
+| BIA.MQ.4 | BI tools, technologies and skills | No | As above. | - |
+| DVR.MQ.1 | Plan to realise revenue and cost value from data | No | Nothing in the tool. | - |
+| DVR.MQ.2 | Practices supporting data revenue generation | No | Nothing in the tool. | - |
+| OD.MQ.1 | Plan to identify and publish open datasets | No | Nothing in the tool. | - |
+| OD.MQ.2 | Process to identify open data | Partly | The `Public` tag and a filter give the candidate list; descriptions are the documented metadata. Value and risk assessments are documents. | G3 |
+| OD.MQ.3 | Process to publish open datasets | No | Publishing happens on the national open data platform. | - |
+| FOI.MQ.1 | Plan for freedom of information compliance | No | Nothing in the tool. | - |
+| FOI.MQ.2 | Freedom of information processes | No | Nothing in the tool. | - |
+| DC.MQ.1 | Data classification plan | Partly | The Tier priority list and the catalog inventory feed the plan. The plan and its status reports are documents. | G3, G4 |
+| DC.MQ.2 | Data classification processes | Yes | The catalog as the dataset inventory, with owners (`DC.3.1`); the prioritised datasets (`DC.1.2`); classification tags by level; the data register of datasets, levels and review dates (`DC.5.1`); access roles; auto classification as the classification automation tool (Level 5). The policy, impact assessments and handling controls (`DC.2.1`, `DC.3.2`, `DC.3.3`) are documents. | 4, G3 |
+| DC.MQ.3 | Review of classified datasets | Yes | Levels published as catalog metadata (`DC.3.5`); the review as tag change history and approval tasks (`DC.3.4`); percentage classified and reviewed as KPIs. | G3, G6 |
+| PDP.MQ.1 | Initial personal data assessment and plan | Partly | Personal-data tags list the types of personal data you hold and where it is stored (`PDP.1.1`). The plan and training are documents. | G3 |
+| PDP.MQ.2 | Privacy policies and processes: breach, consent, data subject rights, risk assessment | Partly | Personal-data tags and quality tests on those tables. Consent, rights, breach notification and risk assessments (`PDP.3.1` to `PDP.4.3`) are processes outside OpenMetadata. | G3 |
+
+Domains: DG data governance, MCM data catalog and metadata, DQ data quality, DO data operations, DCM document and content management, DAM data architecture and modelling, DSI data sharing and interoperability, RMD reference and master data, BIA business intelligence and analytics, DVR data value realisation, OD open data, FOI freedom of information, DC data classification, PDP personal data protection.
+
+### Not an OpenMetadata thing
+
+The 22 questions marked No are plans, policies and operations. Agree them between departments; the tool only holds their results afterwards.
+
+| Who usually owns it | Questions |
+|---|---|
+| Data governance office | DG.MQ.1, DG.MQ.2, DAM.MQ.1, RMD.MQ.1, DVR.MQ.1 and 2, OD.MQ.1, FOI.MQ.1 and 2 |
+| IT and database operations | DO.MQ.1, 2 and 3, DSI.MQ.4 |
+| Records and content management | DCM.MQ.1, 2 and 3 |
+| Master data owners and IT | RMD.MQ.3 |
+| Business intelligence team | BIA.MQ.1, 2, 3 and 4 |
+| Open data publisher | OD.MQ.3 |
+
+Two things stay manual even when the rest is done in OpenMetadata: uploading dataset definitions to the National Data Catalog, and publishing open datasets. Auto classification needs a network that allows its model download; the lab's doesn't.
+
+### Operational excellence
+
+The index's third part, operational excellence (OE), is scored from how an entity uses the national data platforms, in six domains: metadata and catalog, data quality, data operations, sharing and interoperability, reference and master data, and open data. The metrics are calculated on those platforms, not in OpenMetadata, and each is scaled from Unacceptable to Leader. Several reward habits you can practise here:
+
+| OE metric (handbook) | What it measures | The habit in OpenMetadata |
+|---|---|---|
+| `MCM.OE.01` Systems cataloged | Share of critical systems whose technical metadata is fully scanned and uploaded | Every critical source is a service with a successful Metadata agent run |
+| `MCM.OE.02` Business attributes defined and linked | Share of required business attributes defined and linked to technical columns | Glossary terms linked to columns (G2) |
+| `MCM.OE.03` Reporting assets defined | Share of required KPIs and metrics documented | Metrics defined in the catalog (G2) |
+| `MCM.OE.04`, `MCM.OE.05` Standards and link accuracy | Attributes linked to standard attribute classes; share of wrongly linked attributes | Reviewed glossary terms with an owner and reviewer (G2) |
+| `DQ.OE.01` Data quality index | Per rule and attribute: clean records divided by records checked, rolled up with weights | The passed-rows percentage of each test result |
+| `DQ.OE.02` Conformance to data standards | The same, against the standards published in the National Data Catalog | Tests that encode your standards (item 7) |
+
+### KPI cards
+
+From Level 4, expect to report your KPIs as cards. A card typically gives: name and code, owner, description, the objective it measures, formula, unit, baseline, target, how often it's measured, data source, how it's collected (manually or automatically), whether higher is better, the current value against the target, and a status. Add recommendations and keep the data behind each value.
+
+OpenMetadata can supply the numbers for these:
+
+| KPI | Question | Where the number comes from |
+|---|---|---|
+| Percentage of assets with a description | MCM.MQ.1, MCM.MQ.3 | Insights |
+| Percentage of assets with an owner | MCM.MQ.3 | Insights |
+| Active users, page views | MCM.MQ.2 | Insights (daily active users, most viewed) |
+| Percentage of critical systems cataloged | MCM.MQ.2 | Services with a successful Metadata agent run |
+| Percentage of business terms linked to columns | MCM.MQ.3 | Glossary |
+| Quality rules deployed | DQ.MQ.3 | Number of test cases |
+| Data quality index | DQ.MQ.3 | Passed-rows percentage of each test result |
+| Quality issues reported against resolved | DQ.MQ.2 | Incident Manager |
+| Time to resolve a quality issue | DQ.MQ.2 | Incident status history (timestamps) |
+| Percentage of datasets classified | DC.MQ.2, DC.MQ.3 | Count of assets with a level tag against all assets |
+| Percentage of classified datasets reviewed | DC.MQ.3 | Custom property `classificationReviewedOn` |

@@ -6,9 +6,12 @@ Guidance for Claude Code working in this repo. Human-facing docs are in [README.
 
 A local, testing-only lab for teaching OpenMetadata's catalog and data-quality features. `seed/seed.py` fills the source databases (MySQL, and Oracle behind a compose profile) with fake data, a share of it deliberately bad. OpenMetadata 2.0.2 catalogs, profiles and tests it. `seed/fix_defects.py` removes the bad rows again. Phase 1 (MySQL) and Phase 2 (Oracle, opt-in under the `oracle` compose profile) are both built (M1 to M5).
 
+The course goal is broader than data quality: participants should understand OpenMetadata as a whole and be able to show evidence for the National Data Index (NDI) maturity assessment (42 questions in 14 domains, Level 0 to 5). The source is SDAIA's published NDI material, kept in `docs/` (the National Data Index document, v1.1: 42 maturity questions with levels and acceptance evidence; and the Operational Excellence handbook and FAQ) and linked from https://sdaia.gov.sa/en/Research/Pages/NationalDataIndex.aspx. The map from each question to what OpenMetadata can show is the "NDI evidence map" in docs/reference.md; items G1 to G7 in docs/learning-path.md produce that evidence. Evidence is cumulative by level: Level 3 is the tool in use, Level 4 a KPI monitoring report, Level 5 continuous improvement and automation.
+
 ## Layout
 
 - `compose.yml`: includes `openmetadata/docker-compose.yml` (official, pinned) merged with `openmetadata/docker-compose.override.yml`, plus `sources/docker-compose.yml`.
+- `docs/`: `learning-path.md`, `reference.md`, and SDAIA's NDI documents (PDF) that the NDI evidence map is based on.
 - `seed/`: `seed.py` (append bad and clean rows), `fix_defects.py` (delete the bad rows), `mysql_generators.py` and `oracle_generators.py` (defects and the test that catches each), `mysql_schema.py`, `oracle_schema.py`.
 - `.env` (git-ignored, holds real credentials) and `.env.example` (placeholders only).
 
@@ -19,6 +22,7 @@ A local, testing-only lab for teaching OpenMetadata's catalog and data-quality f
 - **Real credentials go only in `.env`.** Never commit it or put secrets in docs.
 - **Git:** there is no `gh` CLI and no PRs. Commit, then push straight to `main` when asked. End commit messages with the Co-Authored-By line from the session's attribution instructions.
 - **Defects and tests stay in sync.** If you change a defect in `mysql_generators.py`, update the matching test in the test tables in `docs/reference.md`, and `fix_defects.py`. The same goes for `oracle_generators.py`.
+- Keep the NDI evidence map (docs/reference.md), the `NDI evidence` line on each learning-path item and items G1 to G7 consistent with each other. Don't invent a new database for NDI examples: the course uses the existing e-commerce and HR data. Where something is a policy and not a tool feature, say so; don't stretch OpenMetadata to cover it.
 - Keep the test names in `docs/reference.md`, the generators' `DEFECTS` and the OpenMetadata test cases identical (MySQL: 13 tests, suite `dqlab_mysql_suite`; Oracle: 12 tests, suite `dqlab_oracle_suite`).
 
 ## Documentation conventions

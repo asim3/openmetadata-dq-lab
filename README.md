@@ -1,6 +1,6 @@
 # openmetadata-dq-lab
 
-A local, testing-only lab for learning OpenMetadata's catalog and data-quality features hands-on. A seeder fills a source database with fake data on demand, a configurable share of it deliberately bad. OpenMetadata catalogs, profiles and tests that database, and the bad rows surface as failed tests you can triage.
+A local, testing-only lab for learning OpenMetadata hands-on: cataloging data, owning, describing and classifying it, tracing lineage, and testing its quality. A seeder fills a source database with fake data on demand, a configurable share of it deliberately bad, so there is always something to find. Each step of the course names the question of SDAIA's National Data Index (NDI) maturity assessment it gives evidence for, and says plainly where a requirement is a policy that OpenMetadata can't do for you.
 
 | Phase | Source | Domain | Status |
 |---|---|---|---|
@@ -15,7 +15,7 @@ Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigg
 |---|---|
 | Setting up the lab | This file |
 | A participant | [docs/learning-path.md](docs/learning-path.md) |
-| Looking up the tests, seeder flags or agents | [docs/reference.md](docs/reference.md) |
+| Looking up the tests, seeder flags, agents or the NDI evidence map | [docs/reference.md](docs/reference.md) (SDAIA's NDI documents are in [docs/](docs/)) |
 | Claude Code working on the repo | [CLAUDE.md](CLAUDE.md) |
 
 ## How it fits together
@@ -139,6 +139,8 @@ The whole learning path, items 1 to 14, was walked through as a participant woul
 | Incidents | one per failed test; they don't close when the test turns green, so each is resolved by hand |
 | `fix_defects.py` (both sources) | after it, every test is green again |
 | Oracle views | 5 tables and 2 views ingested; lineage from each view to its tables; `V_MONTHLY_PAYROLL` has 91 rows against 100 employees |
+
+The governance items (G1 to G7: team, domains, owners, a classification with four levels, column and table tags, certification, tier, a custom property, an announcement, a task and a data contract) were checked through the API only. Search by tag and the Insights charts were not checked.
 
 Not covered, because the API walk doesn't exercise them: how the UI looks and its exact labels; the timing of the agents AutoPilot adds after Create & Deploy in the UI (a manual API trigger created them within minutes); and PII auto-classification (off on purpose). Report anything in the UI that differs from the learning path.
 

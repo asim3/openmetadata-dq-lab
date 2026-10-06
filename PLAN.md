@@ -225,7 +225,7 @@ Split by audience:
 
 - `README.md` (developer setup): purpose, architecture sketch, prerequisites, quickstart, resetting, infrastructure troubleshooting (Oracle startup time, memory, networking), the pinned version, and the Phase 2 add-on.
 - `docs/learning-path.md` (participants): the class flow, the step-by-step learning path, and UI troubleshooting.
-- `docs/reference.md`: the tests and the defects they catch, why the sources have no constraints, the seeder reference, and the agents.
+- `docs/reference.md`: the tests and the defects they catch, why the sources have no constraints, the seeder reference, the agents, and the NDI evidence map.
 - `CLAUDE.md`: repo rules and conventions for Claude Code.
 
 ## 6. Build order
@@ -237,3 +237,4 @@ Split by audience:
 | M3 | MySQL learning path, README Phase 1 | Acceptance 3–5; **checkpoint: Phase 1 usable** |
 | M4 | Oracle service under the `oracle` profile, schema, views, generators | Acceptance 6–7 |
 | M5 | Oracle learning path, README Phase 2 | Acceptance 8–9 |
+| M6 | Governance items G1 to G7 and the NDI evidence map (National Data Index): the course covers OpenMetadata as a whole and maps each step to the NDI maturity questions it evidences. No new data. | Items checked through the API; UI labels checked by the user |
