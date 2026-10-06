@@ -142,7 +142,7 @@ The whole learning path, items 1 to 14, was walked through as a participant woul
 
 The governance items (G1 to G7: team, domains, owners, a classification with four levels, column and table tags, certification, tier, a custom property, an announcement, a task and a data contract) were checked through the API only. Search by tag and the Insights charts were not checked.
 
-Not covered, because the API walk doesn't exercise them: how the UI looks and its exact labels; the timing of the agents AutoPilot adds after Create & Deploy in the UI (a manual API trigger created them within minutes); and PII auto-classification (off on purpose). Report anything in the UI that differs from the learning path.
+Not covered, because the API walk doesn't exercise them: how the UI looks and its exact labels; PII auto-classification (off on purpose); and the Oracle half of the UI walkthrough. Report anything in the UI that differs from the learning path.
 
 ## Pinned OpenMetadata version
 

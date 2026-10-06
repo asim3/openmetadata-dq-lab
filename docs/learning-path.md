@@ -35,27 +35,31 @@ Settings > Services > Databases > Add New Service > MySQL. This opens a three-st
 | Host and Port | `source-mysql:3306`. OpenMetadata runs inside Docker, so not `localhost:3307`. |
 | Database Schema | `dqlab` (under Scope & Options). Leave Database Name and Query History Table empty. |
 
-Click Test Connection. Every step should pass except GetQueries, which warns that the user can't read `mysql.general_log`. That's expected: query history feeds usage and lineage, which this lab doesn't use. A yellow "Test connection partially successful" banner appears, and you can still continue.
+Leave **Advanced Config** as it is: the scheme `mysql+pymysql`, no SSL files, no connection options and no sample data storage. Most connections never need it.
 
-There is no Save button. Click Next: What to Ingest, keep the defaults (scan everything, system schemas excluded) and click **Create & Deploy**.
+Click Test Connection. It runs a few checks and shows each one: the connection is established, the schemas are listed, and `dqlab` has 3 tables and 0 views. The last check fails with **Query history table not accessible** (`SELECT command denied ... for table 'general_log'`). That's expected: the lab's user can't read `mysql.general_log`, and query history only feeds usage and lineage, which this lab doesn't use for MySQL. Ignore the suggestion to grant `SELECT` on it. A yellow banner says "Test connection partially successful: Some steps had failures, we will only ingest partial metadata", and **Next: What to Ingest** stays available. The partial metadata is everything this lab uses.
+
+There is no Save button. Click Next: What to Ingest. The page "What should we ingest?" confirms "Connected to source-mysql:3306" and has four sections, Databases, Schemas, Tables and Stored Procedures. Each is set to scan everything, and under Schemas the **Exclude system schemas** switch is on (it excludes `information_schema` and `performance_schema`). Leave all of it as it is and click **Create & Deploy**.
 
 **NDI evidence:** `MCM.MQ.2` (the catalog tool in use, with its sources) and `DSI.MQ.1` (an inventory of systems and data stores).
 
 ## 3. Run metadata ingestion
 
-Create & Deploy starts **AutoPilot**, an OpenMetadata feature that creates agents for a new service without you adding any. You don't press anything for this. It runs the Metadata agent straight away and adds more agents, all on a weekly schedule, within the first hour. Open the service's Agents tab and look before you add an agent of your own, because AutoPilot's copy would duplicate it. Then fix them all in one pass:
+Create & Deploy starts **AutoPilot**, an OpenMetadata feature that creates agents for a new service without you adding any. You don't press anything for this. Within about two minutes the service page shows them: the Insights tab has an Agents Status box, and the Agents tab lists the agents. AutoPilot's first pass runs the Metadata agent (it ingests the tables, and shows Success), then the Lineage agent (it fails on MySQL, shown as Failed with a Diagnose button) and the Usage agent (Success, with 0 queries). It also creates the Profiler and Auto Classification agents, but doesn't run them: they show "No status" and wait for Sunday. Look at the Agents tab before you add an agent of your own, because AutoPilot's copy would duplicate it. Then fix them all in one pass:
 
 | Agent | What to do |
 |---|---|
-| Metadata | Keep it. Edit it (`⋮` > Edit) and set the schedule to On Demand. It has already run once. |
-| Lineage | Delete it. It fails (same `mysql.general_log` denial) and the lab doesn't use lineage. |
-| Usage | Delete it. It finds 0 queries. |
+| Metadata | Keep it. Open its `⋮` menu > **Edit configuration**, click Next, choose On Demand and Submit. It has already run once. |
+| Lineage | Delete it (`⋮` > **Delete agent**). It shows Failed with a Diagnose button; click the agent to see the error, the same `mysql.general_log` denial. The lab doesn't use lineage on MySQL. |
+| Usage | Delete it. It succeeds but finds 0 queries. |
 | AutoClassification | Keep it. Turn on Store Sample Data, turn off Enable Auto Classification (PII), set On Demand. Item 4. |
 | Profiler | Keep it. Remove its classification filter (`Tier1`, `Tier2`), set On Demand. Item 6. |
 
-Apart from Metadata, AutoPilot's agents don't run yet: they wait for their weekly schedule. So click Run on each one after you've edited it.
+The `⋮` menu of an agent has Pause, Re-deploy, Edit configuration and Delete agent; next to it are **Logs** and **Run**. The edit form has two steps: Configure Ingestion (the settings, then **Next**) and Schedule Interval (the **Schedule** and **On Demand** cards, then **Submit**).
 
-Don't click Trigger AutoPilot, if you see it: it recreates the agents you deleted. The blue "Agents deploying" banner can stay stuck on a count like "2 queued" after you edit the agents; ignore it.
+Profiler and Auto Classification don't start by themselves, so click **Run** on each one after you've edited it. Run Auto Classification first (item 4), then the Profiler (item 6).
+
+Don't click **Trigger AutoPilot** (top right of the service page; it's greyed out while AutoPilot runs and available afterwards): it recreates the agents you deleted, and Lineage would fail again. The blue "Agents deploying & ingesting metadata" banner can stay on "1 done · 0 running · 2 queued" until you've run the other agents, and then turns into a green "Deployment complete". Ignore it.
 
 Then explore `dqlab_mysql > default > dqlab`: **you should see** three tables (`customers`, `orders`, `products`), their columns and types. Click Run on the Metadata agent any time you want to re-ingest.
 
@@ -63,7 +67,7 @@ Then explore `dqlab_mysql > default > dqlab`: **you should see** three tables (`
 
 ## 4. Run auto classification for sample data
 
-Edit the AutoClassification agent that AutoPilot created (`⋮` > Edit). Turn on Store Sample Data, turn off Enable Auto Classification, and set the schedule to On Demand. Save, then click Run. If the agent isn't there yet, add one yourself on the Agents tab with the same settings, and delete AutoPilot's copy if it shows up later. **You should see** a Sample Data tab with 50 rows on each table (the Row Limit dropdown above it is only a display limit). In OpenMetadata 2.x this is the only pipeline that stores table sample data.
+Edit the AutoClassification agent that AutoPilot created (`⋮` > Edit configuration). Turn on Store Sample Data, turn off Enable Auto Classification, click Next, choose On Demand and Submit. Then click Run. If the agent isn't there yet, add one yourself on the Agents tab with the same settings, and delete AutoPilot's copy if it shows up later. **You should see** a Sample Data tab with 50 rows on each table (the Row Limit dropdown above it is only a display limit). In OpenMetadata 2.x this is the only pipeline that stores table sample data.
 
 Enable Auto Classification (PII tagging) stays off in this lab. It downloads a spaCy language model from GitHub the first time it runs, and networks that inspect TLS block that download. On an open network, you can turn it on to get suggested PII tags on columns such as `email` and `full_name`.
 
@@ -73,7 +77,7 @@ Enable Auto Classification (PII tagging) stays off in this lab. It downloads a s
 
 Add descriptions to tables and columns, set an owner, apply a tag or two, and create a glossary term (for example "Order", linked to `orders`).
 
-This is the quick version. Items G1 to G7 do it properly, with the evidence NDI asks for.
+In Explore, open the tree under Databases (`mysql > dqlab_mysql > default > dqlab > Tables`) and click a table. The panel on the right has a pencil next to Description, Owners, Domains, Tier, Tags and Glossary Terms. Description opens an editor with a **Save** button. The table page has the same fields, and its Columns tab has an **Add** button under Tags and Glossary Terms for each column.
 
 This is the quick version. Items G1 to G7 do it properly, with the evidence NDI asks for.
 
@@ -81,22 +85,22 @@ This is the quick version. Items G1 to G7 do it properly, with the evidence NDI 
 
 ## 6. Run the profiler
 
-Edit the Profiler agent that AutoPilot created (`⋮` > Edit) and make two changes:
+Edit the Profiler agent that AutoPilot created (`⋮` > Edit configuration) and make two changes:
 
-- **Remove the classification filter.** AutoPilot's profiler only profiles tables tagged `Tier1` or `Tier2` (Filter Patterns > classification filter). None of the lab's tables are, so the run succeeds but profiles nothing ("Processed records: 0, Filtered: 3" in the logs). Delete both entries.
-- Set the schedule to On Demand.
+- **Remove the classification filter.** AutoPilot's profiler only profiles tables tagged `Tier1` or `Tier2`: in the agent's form, under **Filter Patterns**, the **Classifications** section is set to "Only specific classifications" with the rules "starts with Tier1" and "starts with Tier2". None of the lab's tables are tagged, so the run succeeds but profiles nothing ("Processed records: 0, Filtered: 3" in the logs). Switch it to "Scan all classifications".
+- Click Next and set the schedule to On Demand, then Submit.
 
-If the agent isn't there yet, add a Profiler agent yourself with those settings, and delete AutoPilot's copy if it shows up later. Save and click Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column: **you should see** the same numbers the seeder printed: 200 for `products`, 500 for `customers`, and your order count for `orders`. Column Profile shows nulls, distinct values and min/max per column.
+If the agent isn't there yet, add a Profiler agent yourself with those settings, and delete AutoPilot's copy if it shows up later. Click Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column: **you should see** the same numbers the seeder printed: 200 for `products`, 500 for `customers`, and your order count for `orders`. Column Profile shows nulls, distinct values and min/max per column.
 
 **NDI evidence:** `DQ.MQ.2`: profiling is the initial quality assessment, and OpenMetadata is the tool for profiling, rules and issue workflow.
 
 ## 7. Create the tests and run them: everything green
 
-Create the 13 tests in [the test table](reference.md#tests-and-the-defects-they-catch). For each one, open the table, go to Data Observability, add a test case, and give it exactly the name, column, type and parameters in the table. Turn on Compute Row Count for each.
+Create the 13 tests in [the test table](reference.md#tests-and-the-defects-they-catch). For each one, go to Observability > Data Quality > Test Cases and click **Add a Test case** (or use **Add tests** in a table's Asset Health box). Choose Table Level or Column Level, select the table (and the column), select the test type, and give it exactly the name and parameters in the table. For the Custom SQL Query tests, the test type is the **Custom Query** link next to Select Test Type. Names must start with a letter and use only letters, numbers and underscores. Turn on Compute Row Count for each.
 
 Give each test a one-line description and an owner. NDI asks for a business description and an owner for every quality rule, and the Test type is its quality dimension in the [dimension column](reference.md#tests-and-the-defects-they-catch).
 
-Then go to Data Quality > Test Suites and create a Bundle Suite named `dqlab_mysql_suite`. A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Add all 13 test cases, add a pipeline with an On Demand schedule, and run it. **You should see** all 13 tests pass.
+Then go to Data Quality > Test Suites and click **Add a Bundle Suite** (the page also lists Table Suites, which OpenMetadata creates for you, one per table). A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Name it `dqlab_mysql_suite`, search and select all 13 test cases in the panel, and click **Create**. Then add a pipeline with an On Demand schedule, and run it. **You should see** all 13 tests pass.
 
 **NDI evidence:** `DQ.MQ.2` and `DQ.MQ.3`: documented rules with an owner, a description, a quality dimension and a threshold, registered as catalog metadata with their results.
 
@@ -161,12 +165,12 @@ A catalog nobody owns, describes or classifies is just a list of tables. These i
 
 Where OpenMetadata can't do the job, the item says so. Policies, plans and approvals between departments stay outside the tool; the [NDI evidence map](reference.md#ndi-evidence-map) lists which ones.
 
-The API accepts every step below, but the exact menu names and buttons were not checked in the UI. If a label differs from what you see, tell your instructor.
+The sidebar and Settings names below were checked in the UI. The forms behind them were not, so if a field or button differs from what you see, tell your instructor.
 
 ### G1. Teams, owners and domains
 
-1. Create a team: Settings > Members > Teams > Add Team. Name it `DataGovernanceOffice` (type Group) and add yourself.
-2. Create two domains, a domain being the business area a table belongs to: Domains > Add Domain. Make `Commerce` for the MySQL tables and `HumanResources` for Oracle's.
+1. Create a team: Settings > Team & User Management > Teams > Add Team. Name it `DataGovernanceOffice` (type Group) and add yourself.
+2. Create two domains, a domain being the business area a table belongs to: Data Marketplace > Domains > Add Domain. Make `Commerce` for the MySQL tables and `HumanResources` for Oracle's.
 3. On each table, set the **Owner** to your team and the **Domain** to the matching domain.
 4. Give a person the built-in **Data Steward** role. They can then edit descriptions and tags without being an admin: that is how you hand someone a governance job without handing them the keys.
 
@@ -176,7 +180,7 @@ The API accepts every step below, but the exact menu names and buttons were not 
 
 ### G2. A glossary of your own terms
 
-Create a glossary (Governance > Glossary > Add Glossary) and add three or four terms the business uses, for example `Customer`, `Order`, `Employee`. Give each a definition, an owner and a reviewer. Link each term to what it describes: `Customer` to `customers`, `Employee` to `EMPLOYEES`. A new term goes through an approval step before it's accepted; approve one as the reviewer. Then define one **metric** (a reporting number the business relies on, such as `monthly_payroll_total`, with its description and how it's calculated), in the Metrics area of the catalog.
+Create a glossary (Govern > Glossary > Add Glossary) and add three or four terms the business uses, for example `Customer`, `Order`, `Employee`. Give each a definition, an owner and a reviewer. Link each term to what it describes: `Customer` to `customers`, `Employee` to `EMPLOYEES`. A new term goes through an approval step before it's accepted; approve one as the reviewer. Then define one **metric** (a reporting number the business relies on, such as `monthly_payroll_total`, with its description and how it's calculated), in Govern > Metrics.
 
 **You should see** the term on the table, the table listed under the term, and the approved status.
 
@@ -184,7 +188,7 @@ Create a glossary (Governance > Glossary > Add Glossary) and add three or four t
 
 ### G3. Classify the data
 
-1. Create your own classification: Governance > Classifications > Add Classification. Name it `Data Classification` and keep it mutually exclusive (one level per asset). Add four tags: `Top Secret`, `Secret`, `Restricted`, `Public`. These are the NDMO levels, from the highest impact to none.
+1. Create your own classification: Govern > Classification > Add Classification. Name it `Data Classification` and keep it mutually exclusive (one level per asset). Add four tags: `Top Secret`, `Secret`, `Restricted`, `Public`. These are the NDMO levels, from the highest impact to none.
 2. Decide each level by impact, as NDI asks: if unauthorised disclosure would do high harm, the data is Top Secret; medium, Secret; low, Restricted; none, Public. Write your reason in the table's description.
 3. Tag the personal-data columns by hand. Give each both a level and the built-in `PersonalData.Personal` tag: `customers.email`, `customers.full_name` and, on Oracle, `EMPLOYEES.full_name`. Tag the salary amounts (`SALARIES.base_amount`) `Restricted`. Tag `products` `Public`: it's catalog data with nothing personal in it.
 4. Add a custom property `classificationReviewedOn` (type string or date, Settings > Custom Properties > Tables) and fill in today's date on each table you classified.
@@ -215,18 +219,18 @@ Setting `Tier1` also matters to AutoPilot's Profiler agent, which only profiles 
 
 - **Announce:** on `customers`, add an announcement ("Customers is now classified Restricted"). It shows on the table and in the activity feed.
 - **Ask:** on a table with no description, request one, assigned to a person. It shows up as a task for them, and they accept or decline it.
-- **Be notified:** create a notification alert (Settings > Notifications > Add Alert) for changes to tables, and send it to yourself or your team.
+- **Be notified:** create a notification (Settings > Notifications) for changes to tables, and send it to yourself or your team. Observability > Alerts is the sibling for test results and pipeline status.
 - **Contract** (optional): on `customers`, create a data contract naming the owner, the schema and the quality tests that must pass. It's what a team promises anyone using its data.
 
-**You should see** the announcement and the task in the activity feed, and the alert listed under Notifications.
+**You should see** the announcement and the task in the activity feed, and the notification listed under Settings > Notifications.
 
 **NDI evidence:** `DG.MQ.4` (communication reaches the people who use the data), `MCM.MQ.3` (logs and notifications of metadata changes; telling users about updates; workflows in the tool), `DSI.MQ.2` in part (a contract records what a team promises the people who use its data).
 
 ### G6. Check the catalog's health and use
 
-Open Insights in the left menu. It shows how much of the catalog has a description and an owner, how many assets sit in each tier, who uses OpenMetadata, which assets are viewed most, and how many assets are never used. After G1 to G5 the percentages go up: that's the measurable result of your work. If the charts are empty, run the Data Insights application once from Settings > Applications.
+Open Insights in the left menu. The Data Assets tab shows the total number of assets and the share with a description, an owner and a tier, and how each changes over time. The App Analytics tab shows who uses OpenMetadata and which assets are viewed most. After G1 to G5 the percentages go up: that's the measurable result of your work. If the charts are empty, run the Data Insights application once from Settings > Applications.
 
-Also look at the audit log (Settings, near the bottom: the API lists logins and changes by user).
+Then open **KPIs** in the left menu of that page and add a KPI (**Add KPI**), such as description coverage, with a target and an end date. NDI's Level 4 asks for KPIs defined in advance. The audit log of who logged in and changed what is available through the API (`/api/v1/audit/logs`); I haven't found a menu for it.
 
 **You should see** description coverage, owner coverage, a tier breakdown, daily active users and most viewed assets.
 

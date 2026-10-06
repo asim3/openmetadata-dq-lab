@@ -163,8 +163,8 @@ Things that go wrong:
 
 AutoPilot is an OpenMetadata application that creates and runs agents for a new service, so a user doesn't have to add them one by one. In the UI, Create & Deploy in the add-service wizard starts it, and there is nothing to press.
 
-- It runs the Metadata agent at once, and creates Lineage, Usage, Profiler and Auto Classification agents (provider `automation`, weekly schedule). In a test that triggered it by hand through the API, all five existed within a few minutes. An earlier UI run saw some of them only after about an hour, so allow up to an hour and look at the Agents tab before adding your own.
-- **Only Metadata runs.** The other agents wait for their weekly slot (Sunday: Metadata 00:00, Lineage and Usage 02:00, Profiler and Auto Classification 04:00), so each one needs a click on Run.
+- Within about two minutes it creates five agents (provider `automation`, weekly schedule, shown as "Only on sunday") and runs the first three in order: Metadata, then Lineage, then Usage. Look at the Agents tab before adding your own.
+- **Profiler and Auto Classification are created but not run.** They show "No status" and wait for their Sunday slot (Metadata 00:00, Lineage and Usage 02:00, Profiler and Auto Classification 04:00), so each needs an edit and a click on Run. AutoPilot's workflow is recorded as failed once Lineage fails on MySQL. These two agents stayed idle in the lab even after Lineage and Usage were deleted, so run them yourself.
 - Its defaults, as observed:
 
  | Agent | Defaults | Result in the lab |
@@ -179,7 +179,7 @@ AutoPilot is an OpenMetadata application that creates and runs agents for a new 
 - **Creating a service through the API does not start it.** Only the agents you create exist.
 - Don't click Trigger AutoPilot after you've deleted agents: it recreates them.
 
-Checked by running the whole learning path through the API, and by triggering AutoPilot by hand on a MySQL test service. Not checked yet: AutoPilot started from the UI wizard (timing), and what it adds for an Oracle service.
+Checked through the API, and in the UI on a MySQL service: Create & Deploy, the agents appearing within about two minutes, the Lineage failure, and the manual runs of Auto Classification (3 assets, 50 sample rows per table) and the Profiler (63 assets; row counts 200, 500 and the seeded order count). Not checked yet: what AutoPilot adds for an Oracle service.
 
 ## NDI evidence map
 
