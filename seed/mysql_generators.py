@@ -5,7 +5,7 @@ list, and each defect maps to the OpenMetadata test that should catch it.
 
 What keeps clean data clean, so a --bad-rate 0 run passes every test:
 - email and sku embed the row id, so they stay unique across runs, even when
-  the same --seed is reused;
+  the same seed is reused;
 - timestamps come from the MySQL server clock, never the host's;
 - clean orders only reference products with a valid price;
 - bad values differ from allowed ones by more than letter case or accents,

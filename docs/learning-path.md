@@ -19,10 +19,10 @@ The seeder prints what it injected, and which test should catch each defect, so 
 ## 1. Seed a clean baseline
 
 ```sh
-python seed/seed.py --init --bad-rate 0 --days 7 --seed 1
+python seed/seed.py --init --bad-rate 0 --days 7
 ```
 
-The tables must exist before OpenMetadata can ingest them. `--seed 1` makes your numbers match the ones quoted below. **You should see** 200 products, 500 customers and 1382 orders in the seeder's summary.
+The tables must exist before OpenMetadata can ingest them. **You should see** 200 products, 500 customers and roughly 1,400 to 1,600 orders in the seeder's summary. The order count differs a little on every run, so use your own numbers wherever this path quotes one.
 
 ## 2. Add the MySQL service and test the connection
 
@@ -86,7 +86,7 @@ Edit the Profiler agent that AutoPilot created (`⋮` > Edit) and make two chang
 - **Remove the classification filter.** AutoPilot's profiler only profiles tables tagged `Tier1` or `Tier2` (Filter Patterns > classification filter). None of the lab's tables are, so the run succeeds but profiles nothing ("Processed records: 0, Filtered: 3" in the logs). Delete both entries.
 - Set the schedule to On Demand.
 
-If the agent isn't there yet, add a Profiler agent yourself with those settings, and delete AutoPilot's copy if it shows up later. Save and click Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column: **you should see** 200 for `products`, 500 for `customers` and 1382 for `orders`. Column Profile shows nulls, distinct values and min/max per column.
+If the agent isn't there yet, add a Profiler agent yourself with those settings, and delete AutoPilot's copy if it shows up later. Save and click Run. On each table, Data Observability > Table Profile shows the row count, which matches the seeder's `total` column: **you should see** the same numbers the seeder printed: 200 for `products`, 500 for `customers`, and your order count for `orders`. Column Profile shows nulls, distinct values and min/max per column.
 
 **NDI evidence:** `DQ.MQ.2`: profiling is the initial quality assessment, and OpenMetadata is the tool for profiling, rules and issue workflow.
 
@@ -243,10 +243,10 @@ Items 10 to 14 repeat the loop on a messier source: Oracle, with views, lineage 
 ### 10. Add the Oracle service
 
 ```sh
-python seed/seed.py --target oracle --init --bad-rate 0 --days 7 --seed 1
+python seed/seed.py --target oracle --init --bad-rate 0 --days 7
 ```
 
-**You should see** 12 departments, 100 employees, 199 job history, 154 salary and 193 allowance rows, and `V_MONTHLY_PAYROLL` with 91 rows.
+**You should see** 12 departments, 100 employees, roughly 200 job history, 150 salary and 200 allowance rows, and `V_MONTHLY_PAYROLL` with a few rows fewer than the 100 employees (the summary prints the exact numbers).
 
 Then Settings > Services > Databases > Add New Service > Oracle.
 
@@ -274,7 +274,7 @@ Use the Lineage agent on the service's Agents tab (AutoPilot creates one; add on
 
 ### 12. Explain why `V_MONTHLY_PAYROLL` disagrees
 
-Compare the view with the table it reads. Open `EMPLOYEES` and then `v_monthly_payroll`, go to Column Profile and look at `emp_id`: the table has 100 values after the baseline, the view 91. (A view's Table Profile shows no row count, so use a column's Values Count.)
+Compare the view with the table it reads. Open `EMPLOYEES` and then `v_monthly_payroll`, go to Column Profile and look at `emp_id`: the table has 100 values after the baseline, the view a few fewer. (A view's Table Profile shows no row count, so use a column's Values Count.)
 
 To see why, open the lineage from item 11 and click the edge between a table and the view: it shows the view's SQL (literal values appear as `?`), which ends in `WHERE e.STATUS = ?`. The value is `'A'`, so terminated staff drop out, and so does any row with a bad status. The view isn't broken; it quietly answers a different question than the raw tables do, which is why a report's totals need checking against their sources.
 

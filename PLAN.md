@@ -81,7 +81,7 @@ openmetadata-dq-lab/
 | `--employees` | 100 | Phase 2 driver: new employees per run |
 | `--bad-rate` | 0.10 | Share of records that are bad |
 | `--days` | 1 | Spread the run across N back-dated days |
-| `--seed` | none | RNG seed for reproducible runs |
+| `--seed` | none | optional random seed |
 
 - Append only; never truncate.
 - Each bad record gets exactly one defect, picked at random from its table's list.

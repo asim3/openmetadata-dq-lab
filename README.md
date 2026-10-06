@@ -76,10 +76,10 @@ Nothing is scheduled: seeding and every OpenMetadata pipeline run when you trigg
    pip install -r seed/requirements.txt
    ```
 
-4. Seed a clean baseline, a week of data with no bad rows. `--seed 1` makes the numbers identical on every machine, so the learning path can quote them (200 products, 500 customers, 1382 orders):
+4. Seed a clean baseline, a week of data with no bad rows. Row counts vary a little from run to run, so the learning path quotes approximate numbers:
 
    ```sh
-   python seed/seed.py --init --bad-rate 0 --days 7 --seed 1
+   python seed/seed.py --init --bad-rate 0 --days 7
    ```
 
 5. Hand over to the participants: [docs/learning-path.md](docs/learning-path.md).
@@ -92,7 +92,7 @@ To start again with fresh source tables, leaving OpenMetadata as it is:
 docker compose rm --stop --force source-mysql
 docker volume rm dqlab_source-mysql-data
 docker compose up -d --wait source-mysql
-python seed/seed.py --init --bad-rate 0 --days 7 --seed 1
+python seed/seed.py --init --bad-rate 0 --days 7
 ```
 
 For Oracle, do the same with `source-oracle` and the volume `dqlab_source-oracle-data` (add `--profile oracle` to the compose commands).
@@ -138,7 +138,7 @@ The whole learning path, items 1 to 14, was walked through as a participant woul
 | Bad batch (`--bad-rate 0.15`) | every failed-row count equals the seeder's summary (uniqueness tests count both copies); a defect with 0 rows leaves its test green |
 | Incidents | one per failed test; they don't close when the test turns green, so each is resolved by hand |
 | `fix_defects.py` (both sources) | after it, every test is green again |
-| Oracle views | 5 tables and 2 views ingested; lineage from each view to its tables; `V_MONTHLY_PAYROLL` has 91 rows against 100 employees |
+| Oracle views | 5 tables and 2 views ingested; lineage from each view to its tables; `V_MONTHLY_PAYROLL` has fewer rows than the 100 employees |
 
 The governance items (G1 to G7: team, domains, owners, a classification with four levels, column and table tags, certification, tier, a custom property, an announcement, a task and a data contract) were checked through the API only. Search by tag and the Insights charts were not checked.
 
@@ -169,7 +169,7 @@ An Oracle 21c XE source with legacy HR/payroll data, two views and lineage. It's
 3. Seed a clean baseline (run `pip install -r seed/requirements.txt` again if you set up before Phase 2):
 
    ```sh
-   python seed/seed.py --target oracle --init --bad-rate 0 --days 7 --seed 1
+   python seed/seed.py --target oracle --init --bad-rate 0 --days 7
    ```
 
    `--init` creates the tables and views, and lets the lab user read Oracle's data dictionary, which OpenMetadata's Oracle connector requires.

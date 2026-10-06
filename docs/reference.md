@@ -132,7 +132,7 @@ The source tables have primary keys and nothing else: no foreign keys, `UNIQUE` 
 | `--employees` | 100 | Oracle: new employees per run. Each gets 1–3 `JOB_HISTORY`, 1–2 `SALARIES` and 1–3 `ALLOWANCES` rows. `DEPARTMENTS` (12 rows) is seeded once. |
 | `--bad-rate` | 0.10 | Share of each table's new rows that are bad |
 | `--days` | 1 | Spread this run's rows over the last N days. Oracle has no load timestamp, so there it spreads the effective dates of each new employee's latest raise and allowances; hire dates are always 1–12 years back. |
-| `--seed` | random | RNG seed. The same seed on the same starting data gives the same batch. |
+| `--seed` | random | Random seed. Optional. The numbers of rows also depend on the time of day, so don't expect two runs to match. |
 
 - Each bad row gets exactly one defect, picked at random from its table's list, and each table gets `round(rows × bad-rate)` bad rows.
 - Timestamps and dates come from the database server's clock (MySQL or Oracle), so your machine's time zone doesn't matter.

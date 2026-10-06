@@ -74,7 +74,7 @@ def parse_args(argv: list[str] | None) -> argparse.Namespace:
     parser.add_argument("--days", type=positive_number, default=1, metavar="N",
                         help="spread the run across N back-dated days (default: 1)")
     parser.add_argument("--seed", type=int, metavar="N",
-                        help="RNG seed; the same seed and starting data give the same batch")
+                        help="optional random seed (row counts still vary with the time of day)")
     return parser.parse_args(argv)
 
 
@@ -233,7 +233,7 @@ def print_summary(port, now, seed, args, created, batch, totals, problems) -> No
         print("warning: ANALYZE TABLE reported: " + "; ".join(problems))
     else:
         print("Table statistics refreshed (ANALYZE TABLE), so OpenMetadata's row counts are current.")
-    print(f"Reproduce this batch from the same starting data with --seed {seed}.")
+    print(f"Random seed: {seed}.")
 
 
 def seed_oracle(args: argparse.Namespace, seed: int) -> None:
@@ -363,7 +363,7 @@ def print_oracle_summary(port, now, seed, args, created, batch, totals, view_tot
 
     if problems:
         print("warning: gathering table statistics failed: " + "; ".join(problems))
-    print(f"Reproduce this batch from the same starting data with --seed {seed}.")
+    print(f"Random seed: {seed}.")
 
 
 if __name__ == "__main__":
