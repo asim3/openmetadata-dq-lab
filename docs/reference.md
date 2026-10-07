@@ -149,7 +149,7 @@ An **agent** is OpenMetadata's name for an ingestion pipeline: a saved job that 
 |---|---|---|
 | Metadata | Catalogs tables and columns (and views, on Oracle). Run it first. | Oracle: schema filter `(?i)^dqlab$`, Include Views on |
 | Auto Classification | Stores 50 sample rows per table. In 2.x it's the only agent that does. | Store Sample Data on; Enable Auto Classification (PII) off |
-| Profiler | Row counts and column statistics | Oracle: same schema filter; Include Views on to profile the views. A view gets column statistics but no table row count. |
+| Profiler | Row counts and column statistics | Oracle: same schema filter; Include Views on to profile the views. With it on, a view gets column statistics but no table row count; with it off (AutoPilot's setting) the views get no profile at all. The switch is under Advanced Config in the agent's form. |
 | Lineage | Links each Oracle view to the tables it selects from. The edge keeps the view's SQL, with literals shown as `?`. | Oracle only: same schema filter |
 | Bundle Suite pipeline | Runs the tests of a Bundle Suite. It runs existing test cases and doesn't create any. | |
 
@@ -170,16 +170,16 @@ AutoPilot is an OpenMetadata application that creates and runs agents for a new 
  | Agent | Defaults | Result in the lab |
  |---|---|---|
  | Metadata | Include Views and Include Tags on | works |
- | Lineage | query and view lineage on | fails: `SELECT command denied ... mysql.general_log` |
- | Usage | | "succeeds", finds nothing |
+ | Lineage | query and view lineage on | MySQL: fails, `SELECT command denied ... mysql.general_log`. Oracle: succeeds and creates the view-to-table edges |
+ | Usage | | MySQL: "succeeds", finds nothing. Oracle: succeeds with 1 warning (it reaches its limit of 1,000 query-log entries); the entries are mostly Oracle's internal queries and OpenMetadata's own scanning, so the usage it records is noise |
  | Profiler | classification filter `Tier1`, `Tier2`; Include Views off | profiles nothing |
  | Auto Classification | **PII tagging on**, **Store Sample Data off**, confidence 80 | PII needs a GitHub download that a TLS-inspecting network blocks; no sample data |
 
-- Edit the last two as in the [learning path](learning-path.md#3-run-metadata-ingestion), and delete Lineage and Usage.
+- Edit the last two as in the [learning path](learning-path.md#3-run-metadata-ingestion), and delete Usage. Delete Lineage on MySQL, where it fails; keep it on Oracle.
 - **Creating a service through the API does not start it.** Only the agents you create exist.
 - Don't click Trigger AutoPilot after you've deleted agents: it recreates them.
 
-Checked through the API, and in the UI on a MySQL service: Create & Deploy, the agents appearing within about two minutes, the Lineage failure, and the manual runs of Auto Classification (3 assets, 50 sample rows per table) and the Profiler (63 assets; row counts 200, 500 and the seeded order count). Not checked yet: what AutoPilot adds for an Oracle service.
+Checked through the API, and in the UI on a MySQL service: Create & Deploy, the agents appearing within about two minutes, the Lineage failure, and the manual runs of Auto Classification (3 assets, 50 sample rows per table) and the Profiler (63 assets; row counts 200, 500 and the seeded order count). On an Oracle service it was checked through the API and in the UI: the same five agents appear within about two minutes, Metadata, Lineage and Usage succeed, Profiler and Auto Classification wait for Sunday, and the schema filter set in the wizard is copied into Metadata, Lineage, Profiler and Auto Classification. The Usage warning is the 1,000-entry limit. The manual runs of Auto Classification (7 assets, sample data stored) and the Profiler (94 assets; row counts 12, 100, 187, 138 and 202, matching the seeded rows) also succeeded on Oracle, with the schema filter in place. With Include Views off, the two views had no column profiles; after switching it on and running again, `v_monthly_payroll` showed 94 values and `v_current_employees` 100 in `emp_id`, and neither view has a table row count.
 
 ## NDI evidence map
 

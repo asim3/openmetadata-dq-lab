@@ -252,23 +252,28 @@ python seed/seed.py --target oracle --init --bad-rate 0 --days 7
 
 **You should see** 12 departments, 100 employees, roughly 200 job history, 150 salary and 200 allowance rows, and `V_MONTHLY_PAYROLL` with a few rows fewer than the 100 employees (the summary prints the exact numbers).
 
-Then Settings > Services > Databases > Add New Service > Oracle.
+Then Settings > Services > Databases > Add New Service > Oracle. It is the same three-step wizard as item 2: Select Service Type, Connect, What to Ingest.
 
-| Field | Value |
+| Field (Connect step) | Value |
 |---|---|
 | Service name | `dqlab_oracle`. The test names assume this name. |
-| Username / Password | `SOURCE_ORACLE_USER` / `SOURCE_ORACLE_PASSWORD` from `.env` |
+| Username | `SOURCE_ORACLE_USER` from `.env` |
+| Oracle Connection Type | Click **Oracle Service Name**. The form opens on Database Schema, which is the wrong one. Then set Oracle Service Name to `XEPDB1`. |
 | Host and Port | `source-oracle:1521`, not `localhost` |
-| Oracle Connection Type | Oracle Service Name: `XEPDB1` |
+| Password | Under Authentication: `SOURCE_ORACLE_PASSWORD` from `.env`. Don't use `SOURCE_ORACLE_SYSTEM_PASSWORD`: it looks similar, but the test fails with `ORA-01017: invalid username/password`. |
 
-Test the connection, then on What to Ingest set:
+Leave **Scope & Options** and **Advanced Config** as they are. In Scope & Options, **Use DBA Tables** is on (the lab user's `SELECT ANY DICTIONARY` grant is what allows it) and **Preserve Identifier Case** is off (which is why OpenMetadata shows lowercase names). Don't change either.
 
-- **Schema Filter Pattern, include:** `(?i)^dqlab$`. This is essential. The lab user can read Oracle's data dictionary, which also lists thousands of `SYS` tables, and without the filter ingestion tries to catalog them all.
-- **Include Views:** on.
+Click Test Connection. It runs six checks (package access, list schemas, list tables, list views, materialized views, query history) and all of them should pass. A successful test unlocks the next step.
 
-Click Create & Deploy. As in item 3, AutoPilot adds agents (for Oracle, expect the same set as for MySQL, and check the Agents tab): give each one you keep the same schema filter and an On Demand schedule, and delete the Usage agent. [Agents and AutoPilot](reference.md#agents-and-autopilot) explains each agent. **You should see** five tables and two views under `dqlab_oracle > default > dqlab`, and a Sample Data tab with 50 rows on the big tables (`DEPARTMENTS` has all 12). OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
+There is no Save button. Click **Next: What to Ingest** at the bottom of the page, and on that page set:
 
-Then run auto classification and the profiler as in items 4 and 6, with the same schema filter. In the Profiler agent, also turn on **Include Views**: item 12 needs the views profiled.
+- **Schemas:** click **Only specific schemas**. Under "Include only schemas where the name...", open the operator list and pick **matches regex**, type `(?i)^dqlab$` in the box and click **Add**. A chip appears, the section header says "Including 1 rule", and the preview reads "Only schemas matching 1 include rule are in scope" and the equivalent regex is `includes += (?i)^dqlab$`. This is essential. The lab user can read Oracle's data dictionary, which lists many system schemas, and **Exclude system schemas** only removes four of them (`sys`, `ctxsys`, `dbsnmp`, `outln`). Without the include rule, ingestion tries to catalog the rest.
+- **Databases, Tables, Stored Procedures:** leave them on scan all. The wizard has no Include Views setting: views are switched on in the agents, below.
+
+Click **Create & Deploy**. As in item 3, AutoPilot adds five agents within about two minutes (open the service's Agents tab) and runs Metadata, Lineage and Usage. Unlike MySQL, all three succeed: Lineage finds the view-to-table edges, and Usage reads 1,000 query-log entries and ends with one warning (it hit its limit of 1,000), but they are mostly Oracle's own internal queries and OpenMetadata's own scanning, so the usage it adds to the lab tables (a "Usage: 29th pctile" figure in the table header, and entries in the Queries tab) is not real use. AutoPilot copies your schema filter into the Metadata, Lineage, Profiler and Auto Classification agents, so you don't need to add it again; the Usage agent has no filter. Give each agent you keep an On Demand schedule, and delete the Usage agent (the lab has no real query traffic to measure). [Agents and AutoPilot](reference.md#agents-and-autopilot) explains each agent. **You should see** five tables and two views under `dqlab_oracle > default > dqlab`, and a Sample Data tab with 50 rows on the big tables (`DEPARTMENTS` has all 12). OpenMetadata shows the view names in lowercase (`v_monthly_payroll`).
+
+Then run auto classification and the profiler as in items 4 and 6, with the same schema filter. AutoPilot's Profiler has **Include Views** off, and then it skips the views entirely (no column statistics). Turn it on in the agent's form (`⋮` > Edit configuration): it is the switch at the bottom of the first step, under **Advanced Config** (below Metrics, above Compute Table Metrics). Item 12 needs the views profiled, so run the Profiler again after you change it.
 
 ### 11. Explore view lineage
 
