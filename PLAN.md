@@ -238,3 +238,30 @@ Split by audience:
 | M4 | Oracle service under the `oracle` profile, schema, views, generators | Acceptance 6–7 |
 | M5 | Oracle learning path, README Phase 2 | Acceptance 8–9 |
 | M6 | Governance items G1 to G7 and the NDI evidence map (National Data Index): the course covers OpenMetadata as a whole and maps each step to the NDI maturity questions it evidences. No new data. | Items checked through the API; UI labels checked by the user |
+| M7 | UI walkthrough checks driven by Playwright for Python, so Claude checks the UI labels and screens itself instead of the user sending screenshots (see below) | Items 1 to 14 and G1 to G7 walked in the UI on a freshly wiped lab; every doc/UI mismatch fixed or listed |
+
+### M7: Playwright UI checks
+
+**Why.** The API walk (2026-10-11, Oracle items 10 to 14) matched the docs, but it can't see UI labels, form layout or what the Failed Rows area shows. Today that needs the user to take screenshots. Playwright lets Claude do it.
+
+**Approach (to confirm it works before building more):**
+
+- Install `playwright` into the repo's `.venv` (kept out of `seed/requirements.txt`: it is a maintainer tool, not a participant dependency; put it in a separate `ui-checks/requirements.txt`).
+- Don't run `playwright install`. The network inspects TLS (Cisco Umbrella), so the browser download will likely fail. Use the Chrome already on the host: `chromium.launch(channel="chrome")` (Edge, `channel="msedge"`, is the fallback). Both are installed.
+- Run headed first, so the user can watch, then headless. Save screenshots to the git-ignored `Screenshots/` folder.
+- Scripts live in `ui-checks/` (not `seed/`). One script per learning-path item, each asserting the labels and values the doc quotes (for example: the "Oracle Service Name" switch, the six Test Connection checks, the "matches regex" chip and "Including 1 rule", Include Views under Advanced Config, `emp_id` Values Count 100 vs 86, the view's `WHERE e.STATUS = ?` on the lineage edge).
+- Log in as `admin@open-metadata.org` / `admin`. Real credentials still come only from `.env`.
+
+**Order of work:**
+
+1. Smoke test: install, open http://localhost:8585, log in, screenshot. If Chrome can't be driven, stop and ask.
+2. Create the Oracle service in the wizard (not the API) so AutoPilot runs. That is the one thing the API walk couldn't cover, and the first browser-driven check of the five Oracle agents the docs describe.
+3. Walk items 10 to 14, then MySQL items 1 to 9, then G1 to G7.
+4. Report every mismatch between the docs and the UI. Edit the docs only for mismatches that are agreed.
+
+**Carried over from 2026-10-11 (not yet done):**
+
+- `docs/learning-path.md` lines 127 and 308 promise a failed-row list ("look at the failed rows", "its failed rows list the mismatches"). The UI shows only the count, as "Found N row(s)" and a `resultRowCount` chart, on the Custom SQL tests checked. Fix both lines. Check one column-level test (for example `employees_status_allowed`) while it is red, to see whether it shows failed rows.
+- Checks 2 to 5 from that session (item 10 labels, Include Views switch, item 12 clicks, AutoPilot on Oracle) are covered by the M7 scripts above.
+
+**Limits.** Playwright can't judge whether a screen is clear to a participant, only whether it matches the text. The user still reviews the docs for readability.
