@@ -26,7 +26,7 @@ The tables must exist before OpenMetadata can ingest them. **You should see** 20
 
 ## 2. Add the MySQL service and test the connection
 
-Settings > Services > Databases > Add New Service > MySQL. This opens a three-step wizard: Select Service Type, Connect, What to Ingest.
+Settings > Services > Databases > Add New Service. Type `MySQL` in the connector search box and click its card (the UI labels it "Mysql"): that moves straight to the Connect step, with no Next button. It is a three-step wizard: Select Service Type, Connect, What to Ingest. The service name box is at the top of the Connect step, above the connection fields.
 
 | Field (Connect step) | Value |
 |---|---|
@@ -37,7 +37,7 @@ Settings > Services > Databases > Add New Service > MySQL. This opens a three-st
 
 Leave **Advanced Config** as it is: the scheme `mysql+pymysql`, no SSL files, no connection options and no sample data storage. Most connections never need it.
 
-Click Test Connection. It runs a few checks and shows each one: the connection is established, the schemas are listed, and `dqlab` has 3 tables and 0 views. The last check fails with **Query history table not accessible** (`SELECT command denied ... for table 'general_log'`). That's expected: the lab's user can't read `mysql.general_log`, and query history only feeds usage and lineage, which this lab doesn't use for MySQL. Ignore the suggestion to grant `SELECT` on it. A yellow banner says "Test connection partially successful: Some steps had failures, we will only ingest partial metadata", and **Next: What to Ingest** stays available. The partial metadata is everything this lab uses.
+Click Test Connection. It runs a few checks and shows each one: the connection is established, the schemas are listed, and `dqlab` has 3 tables and 0 views. The last check, **Read query history (usage & lineage)**, ends in a **Warning**, not a pass, with **Query history table not accessible** (`SELECT command denied ... for table 'general_log'`). That's expected: the lab's user can't read `mysql.general_log`, and query history only feeds usage and lineage, which this lab doesn't use for MySQL. Ignore the suggestion to grant `SELECT` on it. A yellow banner says "Test connection partially successful: Some steps had failures, we will only ingest partial metadata", and **Next: What to Ingest** stays available. The partial metadata is everything this lab uses.
 
 There is no Save button. Click Next: What to Ingest. The page "What should we ingest?" confirms "Connected to source-mysql:3306" and has four sections, Databases, Schemas, Tables and Stored Procedures. Each is set to scan everything, and under Schemas the **Exclude system schemas** switch is on (it excludes `information_schema` and `performance_schema`). Leave all of it as it is and click **Create & Deploy**.
 
@@ -59,7 +59,7 @@ The `⋮` menu of an agent has Pause, Re-deploy, Edit configuration and Delete a
 
 Profiler and Auto Classification don't start by themselves, so click **Run** on each one after you've edited it. Run Auto Classification first (item 4), then the Profiler (item 6).
 
-Don't click **Trigger AutoPilot** (top right of the service page; it's greyed out while AutoPilot runs and available afterwards): it recreates the agents you deleted, and Lineage would fail again. The blue "Agents deploying & ingesting metadata" banner can stay on "1 done · 0 running · 2 queued" until you've run the other agents, and then turns into a green "Deployment complete". Ignore it.
+Don't click **Trigger AutoPilot** (top right of the service page; it's greyed out while AutoPilot runs and available afterwards): it recreates the agents you deleted, and Lineage would fail again. The blue "Agents deploying & ingesting metadata" banner can stay on "2 done · 0 running · 2 queued · 1 failed" until you've run the other agents, and then turns into a green "Deployment complete". Ignore it.
 
 Then explore `dqlab_mysql > default > dqlab`: **you should see** three tables (`customers`, `orders`, `products`), their columns and types. Click Run on the Metadata agent any time you want to re-ingest.
 
@@ -96,11 +96,11 @@ If the agent isn't there yet, add a Profiler agent yourself with those settings,
 
 ## 7. Create the tests and run them: everything green
 
-Create the 13 tests in [the test table](reference.md#tests-and-the-defects-they-catch). For each one, go to Observability > Data Quality > Test Cases and click **Add a Test case** (or use **Add tests** in a table's Asset Health box). Choose Table Level or Column Level, select the table (and the column), select the test type, and give it exactly the name and parameters in the table. For the Custom SQL Query tests, the test type is the **Custom Query** link next to Select Test Type. Names must start with a letter and use only letters, numbers and underscores. Turn on Compute Row Count for each.
+Create the 13 tests in [the test table](reference.md#tests-and-the-defects-they-catch). For each one, go to Observability > Data Quality > Test Cases and click **Add a Test case** (or use **Add tests** in a table's Asset Health box). Choose Table Level or Column Level, select the table (and the column), select the test type, and give it exactly the name and parameters in the table. For the Custom SQL Query tests, choose **Custom SQL Query** from the Select Test Type list, paste the SQL, and set Strategy, Operator and Threshold. The Name box is pre-filled with a generated name when you pick the test type: replace it with the name from the table. Names must start with a letter and use only letters, numbers and underscores. Turn on Compute Row Count for each.
 
 Give each test a one-line description and an owner. NDI asks for a business description and an owner for every quality rule, and the Test type is its quality dimension in the [dimension column](reference.md#tests-and-the-defects-they-catch).
 
-Then go to Data Quality > Test Suites and click **Add a Bundle Suite** (the page also lists Table Suites, which OpenMetadata creates for you, one per table). A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Name it `dqlab_mysql_suite`, search and select all 13 test cases in the panel, and click **Create**. Then add a pipeline with an On Demand schedule, and run it. **You should see** all 13 tests pass.
+Then go to Data Quality > Test Suites and click **Add a Bundle Suite** (the page also lists Table Suites, which OpenMetadata creates for you, one per table). A Bundle Suite is OpenMetadata's name for a logical test suite, and it can span tables. Name it `dqlab_mysql_suite`, search and select all 13 test cases in the panel, and click **Create**. In the same panel, switch on **Create Pipeline**, name it and choose **On Demand**. Run it from the suite's Pipelines tab: the row's `⋮` menu > **Run**. **You should see** all 13 tests pass.
 
 **NDI evidence:** `DQ.MQ.2` and `DQ.MQ.3`: documented rules with an owner, a description, a quality dimension and a threshold, registered as catalog metadata with their results.
 
@@ -118,14 +118,14 @@ Compare every red test with the seeder's summary:
 
 [Reading the results](reference.md#reading-the-results) explains the other quirks you may run into.
 
-**NDI evidence:** `DQ.MQ.3`: the failed tests are the issue log. The index's operational-excellence part also scores a *data quality index*: for each rule, the clean records divided by the records checked, as a percentage, averaged over the rules. Each test result shows exactly that as its passed-rows percentage, so you can work out your own.
+**NDI evidence:** `DQ.MQ.3`: the failed tests are the issue log. The index's operational-excellence part also scores a *data quality index*: for each rule, the clean records divided by the records checked, as a percentage, averaged over the rules. With Compute Row Count on, every result stores its passed and failed row counts (the REST API returns `passedRows` and `failedRows`; the 2.0.2 screens show only the result message), so you can work out your own.
 
 ## 9. Investigate, fix and resolve
 
 Red tests are the start of a process, not the end of one. This is the workflow a data team follows, and the order matters:
 
-1. **Triage.** Open each failed test (Data Quality > Test Cases, or the Incident Manager). Read the failed-row count and look at the failed rows. Compare with the seeder's summary: the counts should match, except that uniqueness tests count both copies of a duplicate.
-2. **Own the incident.** Acknowledge the incident, assign it to someone and set a severity. From now on there is a named owner and a record of what happened. If the table has an owner, new incidents on it are assigned to that owner automatically.
+1. **Triage.** Open each failed test (Data Quality > Test Cases, or the Incident Manager). Read the result message on the test's page: "Found 54 row(s)" for a Custom SQL test, and for a column test the good values ("Found countInSet=2891" out of 2,941 rows, so 50 failed). OpenMetadata 2.0.2 shows counts, not a list of the failing rows: run the test's SQL (SQL Query tab) in the source database to see them. Compare with the seeder's summary: the counts should match, except that uniqueness tests count both copies of a duplicate.
+2. **Own the incident.** Acknowledge the incident, assign it to someone and set a severity: on the failed test's page, the **Incident Status** pencil opens Update Status (Ack, Assigned, New, Resolved; Assigned asks for an Assignee) and the **Severity** pencil opens Edit Severity. From now on there is a named owner and a record of what happened. If the table has an owner, new incidents on it are assigned to that owner automatically.
 3. **Find the root cause.** Ask where the bad rows came from before touching them. In a real company the cause is usually an upstream application bug, a faulty load job or a schema change, and the table's owner and lineage tell you who to talk to. In this lab the cause is the seeder's bad batch.
 4. **Fix at the source.** Correct the rows, or move them out, in the source database, and fix whatever produced them. Cleaning up the symptom only brings the same defects back on the next load. In the lab, the owners' fix is a script that removes every bad row the seeder can inject:
 
@@ -153,7 +153,7 @@ Red tests are the start of a process, not the end of one. This is the workflow a
  DELETE FROM dqlab.orders WHERE amount <= 0 OR quantity <= 0;
  ```
 
-5. **Re-run and resolve.** Re-run the Bundle Suite pipeline (re-run the Profiler too if you changed row counts) and confirm the tests are green again. Incidents don't close on their own when a test turns green, so resolve each one yourself, with a note on the cause and the fix. The history stays in OpenMetadata as an audit trail.
+5. **Re-run and resolve.** Re-run the Bundle Suite pipeline (re-run the Profiler too if you changed row counts) and confirm the tests are green again. Incidents don't close on their own when a test turns green, so resolve each one yourself: Update Status > **Resolved** asks for a Reason and a Comment (both required), so write the cause and the fix there. The history stays in OpenMetadata as an audit trail.
 
 To start over instead of fixing rows one by one, ask your instructor to follow [Resetting](../README.md#resetting): that restores the clean baseline in the source database.
 
@@ -169,18 +169,18 @@ The sidebar and Settings names below were checked in the UI. The forms behind th
 
 ### G1. Teams, owners and domains
 
-1. Create a team: Settings > Team & User Management > Teams > Add Team. Name it `DataGovernanceOffice` (type Group) and add yourself.
-2. Create two domains, a domain being the business area a table belongs to: Data Marketplace > Domains > Add Domain. Make `Commerce` for the MySQL tables and `HumanResources` for Oracle's.
-3. On each table, set the **Owner** to your team and the **Domain** to the matching domain.
-4. Give a person the built-in **Data Steward** role. They can then edit descriptions and tags without being an admin: that is how you hand someone a governance job without handing them the keys.
+1. Create a team: Settings > Team & User Management > Teams (it opens the Organization page; use **Add**, or **Add Team** once a team exists). Name it `DataGovernanceOffice`, give it a Display Name (required) and keep the type Group. Then open the team and click **Join Team** to add yourself.
+2. Create two domains, a domain being the business area a table belongs to: Data Marketplace > Domains > Add Domain. Make `Commerce` for the MySQL tables and `HumanResources` for Oracle's. The form also needs a Description and a Domain Type (pick **Source-aligned**: the data comes straight from a source system); set the team as Owner. If you give a Display Name (`Human Resources`), the pickers show that.
+3. On each table, set the **Owner** to your team (the pencil next to Owners opens a popup with Teams and Users tabs) and the **Domain** to the matching domain (the pencil next to Domains).
+4. Give a person the built-in **Data Steward** role: Settings > Team & User Management > Users > Add User, fill in Email, set Roles to Data Steward (and Teams to your team), and create the account. (On the Create User page the password is generated for you.) They can then edit descriptions and tags without being an admin: that is how you hand someone a governance job without handing them the keys.
 
-**You should see** the owner and domain in every table's header, and the team's page listing what it owns.
+**You should see** the owner and domain in every table's header, and the team's page listing what it owns (its Assets tab; the count is higher than the number of tables, because it lists related assets too).
 
 **NDI evidence:** `DG.MQ.3` and `MCM.MQ.3`: owners, domains and stewards show who looks after the data, and show the roles are in use. The appointment decisions and the organisation chart are paper, not something the tool holds.
 
 ### G2. A glossary of your own terms
 
-Create a glossary (Govern > Glossary > Add Glossary) and add three or four terms the business uses, for example `Customer`, `Order`, `Employee`. Give each a definition, an owner and a reviewer. Link each term to what it describes: `Customer` to `customers`, `Employee` to `EMPLOYEES`. A new term goes through an approval step before it's accepted; approve one as the reviewer. Then define one **metric** (a reporting number the business relies on, such as `monthly_payroll_total`, with its description and how it's calculated), in Govern > Metrics.
+Create a glossary (Govern > Glossary > Add Glossary; the Description is required, and Owners and Reviewers are set with the `+` buttons) and add three or four terms the business uses, for example `Customer`, `Order`, `Employee`. Give each a definition, an owner and a reviewer. Link each term to what it describes: on the table page, the **Glossary Term** `+` opens a picker; type the term's name, tick it and click **Update**. For example `Customer` to `customers`, `Employee` to `EMPLOYEES`. A new term goes through an approval step before it's accepted, but only when the person who creates it is not one of the glossary's reviewers: a term created by its own reviewer is approved at once. So make a second person (the Data Steward from G1) the reviewer, add a term as yourself, and it shows **In Review** with an approval task for the reviewer. Log in as the reviewer, open the term, then Activity Feeds & Tasks > Tasks > **Approve** > **Ok**. If you approve it from another account (the admin), the task closes but the term stays In Review. Then define one **metric** (a reporting number the business relies on, such as `monthlyPayrollTotal`, with its description and how it's calculated), in Govern > Metrics > Add Metric. The name must be camelCase: spaces, underscores and dots are not supported. Fill in Granularity (Month), Metric Type (Sum), Language (SQL) and the Code (for example `SELECT SUM(TOTAL_PAY) FROM V_MONTHLY_PAYROLL`), then click **Create**.
 
 **You should see** the term on the table, the table listed under the term, and the approved status.
 
