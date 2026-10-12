@@ -46,6 +46,7 @@ NDI expects every quality rule to name its dimension: completeness, uniqueness, 
 
 - **Match enum matters.** Without it, Column Values To Be In Set passes as soon as one value is allowed. With it, every row must be allowed.
 - **Uniqueness counts both copies.** One injected duplicate makes two rows non-unique, so expect twice the seeder's duplicate count.
+- **Read counts from the result message.** A test's page shows "Found 54 row(s)" (Custom SQL) or the good values, such as "Found countInSet=2891" (a column test), not a list of failing rows. With **Compute Row Count** on, each result also stores `passedRows` and `failedRows` (the REST API returns them; the screens don't show them).
 - **Bounds are inclusive whole numbers.** "Price ≤ 0 is bad" becomes Min 1. The lab never prices anything between 0 and 1.00.
 - **MySQL compares text case-insensitively.** Under the default collation, `'PENDING' IN ('pending')` is true, so a case-only typo would slip past the set tests. The seeder's bad values differ by more than case (`canceled`, `UK`, `KSA`), and that blind spot is worth a discussion in class.
 - **"Future" is relative to when the test runs.** Bad rows are dated 60 days to 2 years ahead.
@@ -209,7 +210,7 @@ OpenMetadata mostly gives you the Level 3 evidence, the numbers for Level 4, and
 | DG.MQ.3 | Roles of the data management organisation | Partly | Teams, owners, domains and Data Steward roles show who does what. The appointment decisions are paper. | G1 |
 | DG.MQ.4 | Change management: awareness, communication, change control, capability | Partly | Announcements, tasks and the activity feed as communication evidence. | G5 |
 | MCM.MQ.1 | Plan to integrate and manage metadata | Partly | A catalog export as the report of documented metadata; the metadata structure (fields, custom properties, tags, glossary; `MCM.4.3`); Insights coverage as the implementation report. The plan is a document. | 5, G2, G4, G6 |
-| MCM.MQ.2 | Metadata management and data catalog tool | Yes | The tool and its version (Settings > About); services as the prioritised data sources (`MCM.1.2`); the tool in use (`MCM.5.1`); roles and policies for access (`MCM.2.1`, `MCM.2.2`); adoption and use, such as active users and page views (`MCM.3.2`, `MCM.6.1`); the audit log (`MCM.5.3`); the version report (`MCM.5.4`); scheduled agents as automated metadata capture (Level 5). The training plan is a document. | 2, 3, G1, G6 |
+| MCM.MQ.2 | Metadata management and data catalog tool | Yes | The tool and its version (the `?` help menu at the top right shows "Version 2.0.2"); services as the prioritised data sources (`MCM.1.2`); the tool in use (`MCM.5.1`); roles and policies for access (`MCM.2.1`, `MCM.2.2`); adoption and use, such as active users and page views (`MCM.3.2`, `MCM.6.1`); the audit log (`MCM.5.3`); the version report (`MCM.5.4`); scheduled agents as automated metadata capture (Level 5). The training plan is a document. | 2, 3, G1, G6 |
 | MCM.MQ.3 | Formal metadata processes (prioritising, populating, access, quality issues) | Yes | Governance workflows and tasks, such as glossary approval and tag, tier and owner updates; notification alerts and change logs (`MCM.5.2`); announcements as communication to users; owners and domains as the stewardship coverage model (`MCM.4.1`); annotation and certification (`MCM.4.6`, `MCM.4.7`); coverage KPIs (`MCM.6.2`). The process descriptions are documents. | G1, G2, G4, G5, G6 |
 | DQ.MQ.1 | Data quality plan | Partly | Owners and stewards on tests and suites show the assigned roles and resources. The plan and roadmap are documents. | 7 |
 | DQ.MQ.2 | Practices to manage and improve data quality | Yes | Rules with owner, description, dimension and threshold (`DQ.2.1`); the Tier priority list (`DQ.1.1`); profiling and test runs as the initial and periodic assessment (`DQ.1.3`); the incident workflow with root cause and resolution status (`DQ.2.3`); OpenMetadata as the tool automating the issue workflow (`DQ.2.5`); issues resolved against reported, and thresholds monitored (`DQ.3.2`). SLAs (`DQ.2.4`) are a document. | 6, 7, 8, 9, 13, 14, G4 |
@@ -287,7 +288,7 @@ OpenMetadata can supply the numbers for these:
 |---|---|---|
 | Percentage of assets with a description | MCM.MQ.1, MCM.MQ.3 | Insights |
 | Percentage of assets with an owner | MCM.MQ.3 | Insights |
-| Active users, page views | MCM.MQ.2 | Insights (daily active users, most viewed) |
+| Active users, page views | MCM.MQ.2 | Insights > App Analytics (daily active users, most viewed). It stayed empty in our lab run, so treat it as a number you collect over time, not one the lab produces |
 | Percentage of critical systems cataloged | MCM.MQ.2 | Services with a successful Metadata agent run |
 | Percentage of business terms linked to columns | MCM.MQ.3 | Glossary |
 | Quality rules deployed | DQ.MQ.3 | Number of test cases |
