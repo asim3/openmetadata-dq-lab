@@ -204,10 +204,10 @@ Auto classification (item 4) is the tool NDI wants for the top level, but PII ta
 
 Not all data is equally important, and NDI asks you to say which is first.
 
-- **Tier.** Set `Tier1` on `orders` and `customers`. It's your priority list.
-- **Certification.** Set `Gold` on a table someone vouches for.
-- **Kind of data.** Create a classification `Data Kind` with `Reference`, `Master` and `Transactional`, and tag the tables. `DEPARTMENTS` is reference data, `customers`, `products` and `EMPLOYEES` are master data, `orders` and `SALARIES` are transactional.
-- **Retention.** Add a custom property `retentionPeriod` (string) and set it to `7 years` on one table. It records the rule; nothing deletes data.
+- **Tier.** Set `Tier1` on `orders` and `customers`: the pencil next to Tier in the table header opens an Edit Tier list (Tier1 to Tier5); pick one and click the tick. It's your priority list.
+- **Certification.** Set `Gold` on a table someone vouches for (the pencil next to Certification: Gold, Silver or Bronze, then the tick).
+- **Kind of data.** Create a classification as in G3 (name `DataKind`, display name `Data Kind`, Mutually Exclusive on) with the tags `Reference`, `Master` and `Transactional`, and tag the tables. If a table already has tags, its Tags box in the side panel shows a pencil instead of a `+`. `DEPARTMENTS` is reference data, `customers`, `products` and `EMPLOYEES` are master data, `orders` and `SALARIES` are transactional.
+- **Retention.** Every table already has a **Retention Period** field in its header (the pencil next to it), so no custom property is needed. It takes an ISO 8601 duration: enter `P7Y` on one table and the header shows "7 years". A plain "7 years" is not accepted. It records the rule; nothing deletes data.
 
 Setting `Tier1` also matters to AutoPilot's Profiler agent, which only profiles `Tier1` and `Tier2` tables (item 6): do item 6 first, or remove that filter.
 
