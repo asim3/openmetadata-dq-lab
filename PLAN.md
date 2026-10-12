@@ -265,3 +265,7 @@ Split by audience:
 - Checks 2 to 5 from that session (item 10 labels, Include Views switch, item 12 clicks, AutoPilot on Oracle) are covered by the M7 scripts above.
 
 **Limits.** Playwright can't judge whether a screen is clear to a participant, only whether it matches the text. The user still reviews the docs for readability.
+
+### M7 status (2026-10-12)
+
+Walked in the UI with Playwright, on a freshly wiped lab: MySQL items 1 to 9, Oracle items 10 to 14 and G1 to G6, with the doc fixes committed. Not done: a completed data contract (G5) and any App Analytics data (G6, empty). Scripts are in `ui-checks/` (see its README). Findings that changed the docs: Compute Row Count is needed for stored row counts; 2.0.2 shows counts, not failing rows; a glossary term created by its own reviewer is approved at once; an admin resolving another reviewer's approval task leaves the term In Review; metric names must be camelCase; the built-in Retention Period takes an ISO 8601 duration.

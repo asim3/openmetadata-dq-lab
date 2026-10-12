@@ -165,7 +165,7 @@ A catalog nobody owns, describes or classifies is just a list of tables. These i
 
 Where OpenMetadata can't do the job, the item says so. Policies, plans and approvals between departments stay outside the tool; the [NDI evidence map](reference.md#ndi-evidence-map) lists which ones.
 
-The sidebar and Settings names below were checked in the UI. The forms behind them were not, so if a field or button differs from what you see, tell your instructor.
+These items were walked in the UI (OpenMetadata 2.0.2, 2026-10-12). Two parts are not fully checked: the optional contract in G5 (the form was opened, not completed) and the App Analytics tab in G6 (empty in our run). If a field or button differs from what you see, tell your instructor.
 
 ### G1. Teams, owners and domains
 
