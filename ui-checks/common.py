@@ -15,13 +15,13 @@ def env(name):
     raise KeyError(name)
 
 
-def open_page(p, headless=True):
+def open_page(p, headless=True, user="admin@open-metadata.org", password="admin"):
     browser = p.chromium.launch(channel="chrome", headless=headless)
     page = browser.new_context(viewport={"width": 1400, "height": 1000}).new_page()
     page.set_default_timeout(20000)
     page.goto(BASE)
-    page.get_by_placeholder("Email").fill("admin@open-metadata.org")
-    page.get_by_placeholder("Password").fill("admin")
+    page.get_by_placeholder("Email").fill(user)
+    page.get_by_placeholder("Password").fill(password)
     page.get_by_role("button", name="Sign In").click()
     page.wait_for_url(lambda u: "/signin" not in u)
     page.wait_for_load_state("networkidle")

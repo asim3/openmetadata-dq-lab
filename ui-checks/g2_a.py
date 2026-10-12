@@ -1,0 +1,21 @@
+from playwright.sync_api import sync_playwright
+from common import *
+with sync_playwright() as p:
+    b, page = open_page(p)
+    page.goto(BASE + "/glossary"); page.wait_for_timeout(3500)
+    print([(e.get_attribute("data-testid"), " ".join(e.inner_text().split())) for e in page.locator("button:visible").all()][6:20])
+    page.get_by_test_id("add-glossary").click(); page.wait_for_timeout(1500)
+    page.locator("input[id='root/name']").fill("BusinessGlossary")
+    page.locator("input[id='root/displayName']").fill("Business Glossary")
+    page.locator(".tiptap").first.click(); page.keyboard.insert_text("Terms the business uses, with one agreed meaning each.")
+    page.get_by_text("Reviewers", exact=True).locator("xpath=following::button[1]").click(); page.wait_for_timeout(1200)
+    page.get_by_role("tab", name="Users").click(); page.wait_for_timeout(800)
+    page.get_by_text("admin", exact=True).last.click(); page.wait_for_timeout(500)
+    page.get_by_role("button", name="Update").click(); page.wait_for_timeout(800)
+    page.get_by_text("Owners", exact=True).locator("xpath=following::button[1]").click(); page.wait_for_timeout(1000)
+    page.get_by_text("Data Governance Office", exact=True).last.click(); page.wait_for_timeout(800)
+    shot(page, "g2_2_reviewer_popup")
+    if page.get_by_role("button", name="Update").count(): page.get_by_role("button", name="Update").click(); page.wait_for_timeout(800)
+    page.get_by_role("button", name="Save").click(); page.wait_for_timeout(4000)
+    print(page.url); shot(page, "g2_3_glossary_created")
+    b.close()

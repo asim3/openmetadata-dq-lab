@@ -1,0 +1,20 @@
+from playwright.sync_api import sync_playwright
+from common import *
+with sync_playwright() as p:
+    b, page = open_page(p)
+    page.goto(BASE + "/settings/members/users"); page.wait_for_timeout(3500)
+    shot(page, "g1_10_users")
+    print([(e.get_attribute("data-testid"), " ".join(e.inner_text().split())) for e in page.locator("button:visible").all()][6:20])
+    page.get_by_test_id("add-user").click(); page.wait_for_timeout(1500)
+    page.locator("#email").fill("data.steward@example.com")
+    page.locator("#displayName").fill("Data Steward")
+    page.locator("#rc_select_1").click(); page.keyboard.type("Data Gov"); page.wait_for_timeout(1500)
+    page.get_by_text("Data Governance Office", exact=True).last.click(); page.wait_for_timeout(500)
+    page.get_by_text("Create User").first.click(); page.wait_for_timeout(300)
+    page.locator("#roles").click(); page.keyboard.type("Data Steward"); page.wait_for_timeout(1200)
+    page.get_by_text("Data Steward", exact=True).last.click(); page.wait_for_timeout(500)
+    page.get_by_text("Create User").first.click(); page.wait_for_timeout(300)
+    shot(page, "g1_11_user_form")
+    page.get_by_role("button", name="Create").last.click(); page.wait_for_timeout(3500)
+    print(page.url); shot(page, "g1_12_user_created")
+    b.close()
