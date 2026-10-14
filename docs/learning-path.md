@@ -165,7 +165,7 @@ A catalog nobody owns, describes or classifies is just a list of tables. These i
 
 Where OpenMetadata can't do the job, the item says so. Policies, plans and approvals between departments stay outside the tool; the [NDI evidence map](reference.md#ndi-evidence-map) lists which ones.
 
-These items were walked in the UI (OpenMetadata 2.0.2, 2026-10-12). Two parts are not fully checked: the optional contract in G5 (the form was opened, not completed) and the App Analytics tab in G6 (empty in our run). If a field or button differs from what you see, tell your instructor.
+These items were walked in the UI (OpenMetadata 2.0.2, 2026-10-12). One part is not fully checked: the App Analytics tab in G6 (empty in our run). If a field or button differs from what you see, tell your instructor.
 
 ### G1. Teams, owners and domains
 
@@ -220,7 +220,7 @@ Setting `Tier1` also matters to AutoPilot's Profiler agent, which only profiles 
 - **Announce:** on `customers`, add an announcement ("Customers is now classified Restricted"): the `⋮` menu at the top right of the table > **Announcements** > **Add Announcement**. A Title, a Start Date and an End Date are required (click the date box, type `2026-10-12` and press Enter). It shows as a banner at the top of the table, and in the activity feed.
 - **Ask:** on a table with no description, request one: the speech-bubble icon next to Description opens a Create Task page. The assignee starts as the table's owner (your team): replace it with a person, type the description you suggest, and click **Suggest**. It shows up as a task for that person (Activity Feeds & Tasks > Tasks) with **Approve** and **Reject**; Approve puts your suggested description on the table.
 - **Be notified:** create a notification for changes to tables: Settings > Notifications > **Alerts** > **Add Alert**. Give it a Name, set the Source to Table, and add a Destination: choose Teams (or Users) and pick yours, then a channel (Email, G Chat, MS Teams, Slack or Webhook). The lab has no mail or chat server, so nothing is delivered, but the alert is created and listed. Observability > Alerts is the sibling for test results and pipeline status.
-- **Contract** (optional): on `customers`, open the **Contract** tab and click **Add Contract**. The form has the sections Contract Details (a title is required, and an owner), Terms of Service, Schema, Semantics, Security and Quality: name the owner, the columns and the quality tests that must pass. It's what a team promises anyone using its data. (I opened this form but did not complete a contract, so this item is not fully checked.)
+- **Contract** (optional): on `customers`, open the **Contract** tab, click **Add Contract**, then **Create Contract**. The form has the sections Contract Details, Terms of Service, Schema, Semantics, Security, Quality and SLA. Only the Contract Title is required (the Owners picker has Teams and Users tabs and is optional). Quality is where you add the tests that must pass, Schema the columns you promise. Click **Save**: the Contract tab then shows the contract with Status **Approved** and version 0.1. It's what a team promises anyone using its data.
 
 **You should see** the announcement banner on the table, the task in the activity feed, and the notification listed under Settings > Notifications > Alerts.
 
